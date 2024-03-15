@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Log;
 
 class Server extends Model
 {
@@ -27,7 +30,7 @@ class Server extends Model
         'sessionCookie', // Use 'sessionCookie' as the column name
     ];
 
-    
+    public $inbounds;
 
     protected $casts = [
         'tags' => 'array',
@@ -42,123 +45,324 @@ class Server extends Model
     {
         return $this->belongsTo(Project::class);
     }
-    private function baseUrl(){
+
+    //private $baseUrl;
+    // Getter method
+    // public function __get($name)
+    // {
+    //     if ($name == 'baseUrl') {
+    //         return $this->getBaseUrl();
+    //     } else {
+    //         // Handle unknown property or throw an exception
+    //         //throw new Exception("Undefined property: $name");
+    //     }
+    // }
+
+
+    public function getBaseUrlAttribute()
+    {
         $scheme = 'https';
         $port = $this->xui_port;
+
         $url = parse_url($this->address);
-        if(isset($url['port'])){
+        if (isset($url['port'])) {
             $port = $url['port'];
         }
-        if(!isset($url['host'])){
-            if(isset($url['path'])){
-            $host = $url['path'];
-            }else{
+        if (!isset($url['host'])) {
+            if (isset($url['path'])) {
+                $host = $url['path'];
+            } else {
                 return;
             }
         } else {
             $host = $url['host'];
         }
 
-        if(isset($url['scheme'])){
+        if (isset($url['scheme'])) {
             $scheme = $url['scheme'];
         } else {
-            
+
             $isValid = filter_var($host, FILTER_VALIDATE_IP);
-            if($isValid ){
+            if ($isValid) {
                 $scheme = 'http';
             }
         }
+        //dump($port);
 
-
-            return $scheme . '://' . $host . ':' .$port ;
+        return $scheme . '://' . $host . ':' . $port;
 
 
     }
+
+    //public $usage;// = getServerUsage($this->id)/ 1024 / 1024 / 1024;
+
+    // function _() {
+    //     print "In BaseClass constructor\n";
+    //     dump($this);
+    //     $this->usage = getServerUsage($this->id)/ 1024 / 1024 / 1024;
+    //     dump($this->usage);
+    // }
+    // function __construct() {
+    //     parent::__construct();
+    //     print "In SubClass constructor\n";
+    //     $this->usage = getServerUsage($this->id)/ 1024 / 1024 / 1024;
+    //     dump($this);
+    // }
+    public function getTodayUsageAttribute()
+    {
+        return round(getServerUsage($this->id) / 1024 / 1024 / 1024, 1);
+    }
+
+    // public static function boot()
+    // {
+    //     parent::boot();
+
+    //     self::retrieved(function ($model) {# Called after data loaded from db
+    //         //dd($model);
+    //         //$this->usage = getServerUsage($this->id)/ 1024 / 1024 / 1024;
+    //     });
+    // }
+    public function setInboundsStat()
+    {
+        // If the session cookie is empty, initiate the login process to obtain a new cookie
+        if (empty($this->sessionCookie)) {
+            log::info('No cookies available, login again!');
+            $loginResponse = $this->loginAndGetSessionCookie();
+            if ($loginResponse['success'] == false) {
+                log::error($loginResponse['error']);
+                return null;
+            }
+
+        }
+        //$apiUrl = $this->baseUrl;
+        $endpoint = '/panel/api/inbounds/list';
+        $url = $this->baseUrl . $endpoint;
+        $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
+        if ($response['success'] == false) {
+            log::error($response['error']);
+            return null;
+        }
+        if ($response['data'] == null) {
+
+            Log::info("First wrong cookie. login again!");
+            $loginResponse = $this->loginAndGetSessionCookie();
+            if ($loginResponse['success'] == false) {
+                log::error($loginResponse['error']);
+
+                return null;
+            }
+
+            $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
+
+        }
+
+        if ($response['success'] == false) {
+            log::error('Login failed for the second time!');
+
+            return;
+        }
+        if ($response['data'] == null) {
+
+            Log::error("2nd wrong cookie!");
+            return null;
+        }
+
+        // If successful, update the model with the new inboundStat
+        $inboundStat = $response['data']['obj'];
+        //dump($inboundStat);
+        $this->update(['inboundStat' => $inboundStat]);
+
+
+        if ($inboundStat == null) {
+            return;
+        }
+        $url = parse_url($this->address);
+        if (isset($url['host'])) {
+            $address = $url['host'];
+        } elseif (isset($url['path'])) {
+            $address = $url['path'];
+        } else {
+            return;
+        }
+
+        foreach ($inboundStat as $index => $inbound) {
+
+            $inbound['settings'] = json_decode($inbound['settings'], true);
+            $inbound['streamSettings'] = json_decode($inbound['streamSettings'], true);
+
+            foreach ($inbound['settings']['clients'] as $cid => $client) {
+                $clientOutbounds = getClientOutbounds($inbound, $client, $address);
+                $clientLinks = getClientLinks($inbound, $client, $address, $this->remark);
+                $inbound['settings']['clients'][$cid]['outbounds'] = $clientOutbounds;
+                $inbound['settings']['clients'][$cid]['links'] = $clientLinks;
+
+            }
+            $inboundStat[$index] = $inbound;
+        }
+
+        $this->inbounds = $inboundStat;
+    }
+
     private function loginAndGetSessionCookie()
     {
+        $loginUrl = $this->baseUrl . "/login";
 
-        $loginUrl = $this->baseUrl() . "/login";
-        
         $loginPayload = [
             'username' => $this->xui_username,
             'password' => $this->xui_password,
         ];
-        
-        $loginResponse = Http::post($loginUrl, $loginPayload);
-        
+
+        try {
+            $loginResponse = Http::post($loginUrl, $loginPayload);
+        } catch (ConnectionException $e) {
+            // Handle SSL connection error
+
+            Log::error("SSL connection error during login: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        } catch (RequestException $e) {
+            // Handle other request errors
+            Log::error("Request error during login: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+
         // Check for HTTP errors
         if ($loginResponse->failed()) {
-            // Handle the error or log it
-            // You might want to return an empty string or handle it based on your needs
-            return '';
+            // Log the error or handle it appropriately
+            Log::error("HTTP error during login: " . $loginResponse->status());
+            return [
+                'success' => false,
+                'error' => $loginResponse,
+            ];
         }
-        
+
+        $responseJson = $loginResponse->json();
+        //dd($responseJson);
+        if ($responseJson['success'] == false) {
+            //dd($responseJson['msg']);
+            Log::error("Login failed: " . $responseJson['msg']);
+            return [
+                'success' => false,
+                'error' => $responseJson['msg'],
+            ];
+        }
         // Extract session cookie from the response headers
         $cookies = $loginResponse->header('Set-Cookie');
-        
+
         // Update the 'sessionCookie' column in the model
         $this->update(['sessionCookie' => $cookies]);
-        
-        return $cookies;
+
+        return [
+            'success' => true,
+            'error' => null,
+        ];
     }
 
-    public function getInboundsStat()
+    private function makeApiRequest($url, $cookies, $data = null, $method = 'GET')
     {
-        $apiUrl = $this->baseUrl();
-        $cookies = $this->sessionCookie;
-        $endpoint = '/panel/api/inbounds/list';
-        $url = $apiUrl . $endpoint;
-        
-        // If the session cookie is empty, initiate the login process to obtain a new cookie
-        if (empty($cookies)) {
-            $this->loginAndGetSessionCookie();
-            // Attempt the API request using the existing or newly obtained session cookie
+
+        try {
             $response = Http::withHeaders([
-                'Accept' => 'application/json',
-                'Cookie' => $cookies,
-        ])->get($url);
+                        'Accept' => 'application/json',
+                        'Cookie' => $cookies,
+                    ])->$method($url, $data);
 
+        } catch (\Exception $e) {
+            // Handle exceptions, log errors, or return false as needed
+            // You can access the exception message with $e->getMessage()
 
-            // If the retry fails, you might want to handle it based on your needs
-            if ($response->failed()) {
-                // Handle the second failure
-                return null;
-            }
-        
-        }else {     
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-                'Cookie' => $cookies,
-            ])->get($url);
-            // If the API request fails, attempt to get a new session cookie and retry the API request
-            
-            if ($response->failed()) {
-                $this->loginAndGetSessionCookie();
-                $response = Http::withHeaders([
-                    'Accept' => 'application/json',
-                    'Cookie' => $this->sessionCookie,
-                ])->get($url);
-
-                // If the retry fails, you might want to handle it based on your needs
-                if ($response->failed()) {
-                    // Handle the second failure
-                    return null;
-                }
-            }
-
-
+            return [
+                'data' => null,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
         }
 
-    
+        $responseJson = $response->json();
 
-        // If successful, update the model with the new inboundStat
-        $inboundStat = $response->json();
+        return [
+            'data' => $responseJson,
+            'success' => true,
+            'error' => null,
+        ];
+    }
 
-        $this->update(['inboundStat' => $inboundStat['obj']]);
+    function updateInbound($newInbound)
+    {
+        $url = $this->baseUrl . "/panel/api/inbounds/update/" . $newInbound['id'];
 
-        // ... perform your additional parsing and logging logic here if needed
+        $headers = [
+            "Content-Type: application/json",
+            "Accept: application/json",
+            "Cookie: " . $this->sessionCookie,
+            // Add any other headers as needed
+        ];
 
-        return $inboundStat;
+        $options = [
+            'http' => [
+                'method' => 'POST',
+                'header' => implode("\r\n", $headers),
+                'content' => json_encode($newInbound),
+            ],
+        ];
+
+        try {
+            $context = stream_context_create($options);
+            $response = file_get_contents($url, false, $context);
+            $result = json_decode($response, true);
+            //echo 'Inbound updated' . PHP_EOL;
+            //dump($result);
+        } catch (Exception $error) {
+            echo 'Error: ' . $error->getMessage() . PHP_EOL;
         }
-    
+        //dump('done');
+    }
+    function updateInbounds()
+    {
+
+        $this->setInboundsStat();
+        //dump($this->inboundStat);
+        //$jsonInbounds = json_decode($this->inboundStat, true);
+        foreach ($this->inbounds as $id => $inbound) {
+
+            $jsonInbound = $this->inboundStat[$id];
+            if ($inbound['streamSettings']['security'] == 'reality') {
+                // $pair = getRandomKeyPair();
+
+                // echo 'privat Key old: ' . $inbound['parsedStream']['realitySettings']['privateKey'] . ' New: ' . $pair['privateKey'] . ' .' . PHP_EOL;
+                // $inbound['parsedStream']['realitySettings']['privateKey'] = $pair['privateKey'];
+
+                // echo 'Public Key old: ' . $inbound['parsedStream']['realitySettings']['settings']['publicKey'] . ' New: ' . $pair['publicKey'] . ' .' . PHP_EOL;
+                // $inbound['parsedStream']['realitySettings']['settings']['publicKey'] = $pair['publicKey'];
+
+                // $shortID = bin2hex(random_bytes(4));
+                // echo 'shortID old: ' . $inbound['parsedStream']['realitySettings']['shortIds'][0] . ' New: ' . $shortID . ' .' . PHP_EOL;
+                // $inbound['parsedStream']['realitySettings']['shortIds'][0] = $shortID;
+            }
+
+            //$newUUID = generateUUID();
+            foreach ($inbound['settings']['clients'] as $cid => $client) {
+                $inbound['settings']['clients'] [$cid]['id'] = generateUUID();
+                unset($inbound['settings']['clients'] [$cid]['outbounds']) ;
+                unset($inbound['settings']['clients'] [$cid]['links']) ;
+            }
+
+            //echo 'UUID old: ' . $inbound['parsedSettings']['clients'][0]['id'] . ' New: ' . $newUUID . ' .' . PHP_EOL;
+            //$inbound['streamSettings']['clients'][0]['id'] = $newUUID;
+
+
+            //$jsonInbound['streamSettings'] = json_encode($inbound['streamSettings'], JSON_PRETTY_PRINT);
+            $jsonInbound['settings'] = json_encode($inbound['settings'], JSON_PRETTY_PRINT);
+            //dd($jsonInbound);
+            $this->updateInbound($jsonInbound);
+        }
+        //dump('done All');
+    }
+
+
 }

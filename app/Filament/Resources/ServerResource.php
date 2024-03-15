@@ -4,12 +4,16 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServerResource\Pages;
 use App\Models\Server;
-use App\Services\ApiConnectorService;
+use App\Models\Usage;
+//use App\Services\ApiConnectorService;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+//use Filament\Notifications\Collection;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
@@ -17,8 +21,10 @@ use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
-use Filament\Notifications\Notification;
+
 
 class ServerResource extends Resource
 {
@@ -47,8 +53,10 @@ class ServerResource extends Resource
                 TextInput::make('xui_password'),
                 TextInput::make('domain'),
                 Select::make('owner_id')
-                    ->relationship('owner', 'name')->createOptionForm([TextInput::make('name')
-                        ->required()]),
+                    ->relationship('owner', 'name')->createOptionForm([
+                            TextInput::make('name')
+                                ->required()
+                        ]),
                 Select::make('project_id')
                     ->relationship('project', 'name'),
 
@@ -62,24 +70,16 @@ class ServerResource extends Resource
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                
-                TextColumn::make('remark'),
 
                 TextColumn::make('address'),
-                
+
                 TextColumn::make('ipv4'),
-
-                TextColumn::make('ipv6'),
-
-                TextColumn::make('ssh_user'),
-
-                TextColumn::make('xui_port'),
-
-                TextColumn::make('xui_username'),
 
                 TextColumn::make('owner.name'),
 
-                TextColumn::make('domain'),
+                TextColumn::make('today usage'),
+
+
             ])
             ->filters([
                 //
@@ -87,32 +87,83 @@ class ServerResource extends Resource
             ->actions([
                 EditAction::make(),
                 DeleteAction::make(),
-                Action::make('connectToApi')
-                ->label('Connect to API')
-                ->action(function (Server $record) {
+                Action::make('lastUsage')
+                    ->label('Usage')
+                    ->action(function (Server $server) {
+                        $usage = getServerUsage($server->id) / 1024 / 1024 / 1024;
 
+
+                        Notification::make()
+                            ->title('Latest usage recorded:')
+                            ->success()
+                            ->body('' . round($usage, 1) . 'GB')
+                            ->send();
+                        //dump($usage / 1024 / 1024 / 1024);
+                        // $lastUsageRow = Usage::where('server_id', $server['id'])
+                        // ->where('client_id', null)
+                        // ->orderBy('timestamp', 'desc')
+                        // ->latest()->first();
+                        // dd($lastUsageRow);
             
-                    // Use the injected service to connect to the API
+                        // Optionally, you can return a message or redirect to a different page
+                        return redirect()->back()->with('message', 'Connected to API successfully!');
+                    }),
+                Action::make('UpdateInbounds')
+                    ->label('Update Inbounds')
+                    ->action(function (Server $server) {
+                        $server->updateInbounds();
 
-                   $record->getInboundsStat();
-                    //dd ($record->inboundStat);
-                    //echo "Generated Link for ";
-                    genServerLinks($record);
-                    //generateLink($record->inboundStat,'tt');
-                    // Notification::make()
-                    // ->title($record->inboundStat->string())
-                    // ->success()
-                    // ->seconds(5) 
-                    // ->send();
-                    
-                    // Optionally, you can return a message or redirect to a different page
-                    return redirect()->back()->with('message', 'Connected to API successfully!');
-                }),
+                        // Optionally, you can return a message or redirect to a different page
+                        return redirect()->back()->with('message', 'Connected to API successfully!');
+                    }),
+                Action::make('OpenServerPanel')
+                    ->label('Panel')
+                    ->url(function (Server $record) {
+                        return $record->baseUrl;
+                    })
+                    ->openUrlInNewTab(),
+                Action::make('OpenMobaSSH')
+                    ->label('Moba')
+                    ->url(function (Server $record) {
+                        $link = 'mobaxterm:' . urlencode($record->tag . '=' . '#109#0%' . $record->ipv4 . '%22%' . $record->ssh_user . '%%-1%-1%sudo su');
+
+                        return $link;
+                    })
+                    ->openUrlInNewTab(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
+                BulkAction::make('newtest')
+                    ->label('Test Bulk Action')
+                    ->action(function (Collection $servers) {
+                        //dd($records);
+                        genMultiServersJson($servers);
+                        genMultiServersLink($servers);
+
+                    }),
+            ])
+            ->headerActions([
+                Action::make('UpdateSubs')
+                    ->label('Update Subscriptions')
+                    ->action(function () {
+
+                        $servers = Server::all();
+                        genMultiServersJson($servers);
+                        genMultiServersLink($servers);
+
+                    }),
+                Action::make('updateUsage')
+                    ->label('Update Usage')
+                    ->action(function () {
+                        updateUsages();
+                        //$servers = Server::all();
+                        //genMultiServersJson($servers);
+                        //genMultiServersLink($servers);
+            
+
+                    }),
             ]);
     }
 
