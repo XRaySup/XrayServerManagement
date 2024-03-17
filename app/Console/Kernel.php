@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
     {
         log::info('Schedule!');
         // $schedule->command('inspire')->hourly();
-        $schedule->call('updateUsages')->everyMinute();
+        $schedule->call('updateUsages')->everyThirtyMinutes();
     }
 
     /**
