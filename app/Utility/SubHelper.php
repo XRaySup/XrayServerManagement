@@ -1,4 +1,6 @@
 <?php
+
+
 use App\Models\Server;
 use App\Models\Usage;
 use Illuminate\Support\Facades\URL;
@@ -25,6 +27,7 @@ function getServerUsage($server_id)
 
 function updateUsages()
 {
+    log::info('updateUsages!');
     $servers = Server::all();
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
@@ -103,7 +106,7 @@ function updateUsages()
 
 
     }
-    dump(Usage::all());
+    //dump(Usage::all());
 }
 function genMultiServersJson($servers)
 {
@@ -1177,28 +1180,28 @@ if (!function_exists('http_build_url')) {
 }
 
 
-function getRandomKeyPair() {
-    // Access the Google Sheet
-    $spreadsheet = new Google\Spreadsheet\SpreadsheetService();
-    $spreadsheet->getClient()->setAccessToken(file_get_contents('token.json'));
-    $sheet = $spreadsheet->spreadsheetById(SERVERS_SHEET_ID)->getSheetByName('Key');
+// function getRandomKeyPair() {
+//     // Access the Google Sheet
+//     $spreadsheet = new Google\Spreadsheet\SpreadsheetService();
+//     $spreadsheet->getClient()->setAccessToken(file_get_contents('token.json'));
+//     $sheet = $spreadsheet->spreadsheetById(SERVERS_SHEET_ID)->getSheetByName('Key');
 
-    // Get the last row with data
-    $lastRow = $sheet->getLastRow();
+//     // Get the last row with data
+//     $lastRow = $sheet->getLastRow();
 
-    // Randomly select a row
-    $randomRowIndex = rand(2, $lastRow);
+//     // Randomly select a row
+//     $randomRowIndex = rand(2, $lastRow);
 
-    // Get the private and public keys from the selected row
-    $privateKey = $sheet->getValue($randomRowIndex, 2);
-    $publicKey = $sheet->getValue($randomRowIndex, 3);
+//     // Get the private and public keys from the selected row
+//     $privateKey = $sheet->getValue($randomRowIndex, 2);
+//     $publicKey = $sheet->getValue($randomRowIndex, 3);
 
-    echo 'Randomly Selected Key Pair:' . PHP_EOL;
-    echo 'Private Key: ' . $privateKey . PHP_EOL;
-    echo 'Public Key: ' . $publicKey . PHP_EOL;
+//     echo 'Randomly Selected Key Pair:' . PHP_EOL;
+//     echo 'Private Key: ' . $privateKey . PHP_EOL;
+//     echo 'Public Key: ' . $publicKey . PHP_EOL;
 
-    return ['privateKey' => $privateKey, 'publicKey' => $publicKey];
-}
+//     return ['privateKey' => $privateKey, 'publicKey' => $publicKey];
+// }
 
 function generateUUID() {
     return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
@@ -1210,31 +1213,31 @@ function generateUUID() {
     );
 }
 
-function update($server) {
-    foreach ($server['inbounds'] as $inbound) {
-        if ($inbound['parsedStream']['security'] == 'reality') {
-            $pair = getRandomKeyPair();
+// function update($server) {
+//     foreach ($server['inbounds'] as $inbound) {
+//         if ($inbound['parsedStream']['security'] == 'reality') {
+//             $pair = getRandomKeyPair();
 
-            echo 'privat Key old: ' . $inbound['parsedStream']['realitySettings']['privateKey'] . ' New: ' . $pair['privateKey'] . ' .' . PHP_EOL;
-            $inbound['parsedStream']['realitySettings']['privateKey'] = $pair['privateKey'];
+//             echo 'privat Key old: ' . $inbound['parsedStream']['realitySettings']['privateKey'] . ' New: ' . $pair['privateKey'] . ' .' . PHP_EOL;
+//             $inbound['parsedStream']['realitySettings']['privateKey'] = $pair['privateKey'];
 
-            echo 'Public Key old: ' . $inbound['parsedStream']['realitySettings']['settings']['publicKey'] . ' New: ' . $pair['publicKey'] . ' .' . PHP_EOL;
-            $inbound['parsedStream']['realitySettings']['settings']['publicKey'] = $pair['publicKey'];
+//             echo 'Public Key old: ' . $inbound['parsedStream']['realitySettings']['settings']['publicKey'] . ' New: ' . $pair['publicKey'] . ' .' . PHP_EOL;
+//             $inbound['parsedStream']['realitySettings']['settings']['publicKey'] = $pair['publicKey'];
 
-            $shortID = bin2hex(random_bytes(4));
-            echo 'shortID old: ' . $inbound['parsedStream']['realitySettings']['shortIds'][0] . ' New: ' . $shortID . ' .' . PHP_EOL;
-            $inbound['parsedStream']['realitySettings']['shortIds'][0] = $shortID;
-        }
+//             $shortID = bin2hex(random_bytes(4));
+//             echo 'shortID old: ' . $inbound['parsedStream']['realitySettings']['shortIds'][0] . ' New: ' . $shortID . ' .' . PHP_EOL;
+//             $inbound['parsedStream']['realitySettings']['shortIds'][0] = $shortID;
+//         }
 
-        $newUUID = generateUUID();
-        echo 'UUID old: ' . $inbound['parsedSettings']['clients'][0]['id'] . ' New: ' . $newUUID . ' .' . PHP_EOL;
-        $inbound['parsedSettings']['clients'][0]['id'] = $newUUID;
+//         $newUUID = generateUUID();
+//         echo 'UUID old: ' . $inbound['parsedSettings']['clients'][0]['id'] . ' New: ' . $newUUID . ' .' . PHP_EOL;
+//         $inbound['parsedSettings']['clients'][0]['id'] = $newUUID;
 
-        $newInbound = json_decode($inbound['json'], true);
-        $newInbound['streamSettings'] = json_encode($inbound['parsedStream'], JSON_PRETTY_PRINT);
-        $newInbound['settings'] = json_encode($inbound['parsedSettings'], JSON_PRETTY_PRINT);
-        updateInbound($server['url'], $server['cookies'], $newInbound);
-    }
-}
+//         $newInbound = json_decode($inbound['json'], true);
+//         $newInbound['streamSettings'] = json_encode($inbound['parsedStream'], JSON_PRETTY_PRINT);
+//         $newInbound['settings'] = json_encode($inbound['parsedSettings'], JSON_PRETTY_PRINT);
+//         updateInbound($server['url'], $server['cookies'], $newInbound);
+//     }
+// }
 
 
