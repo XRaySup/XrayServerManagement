@@ -12,7 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        log::info('Schedule!');
+        
         // $schedule->command('inspire')->hourly();
         $schedule->call('updateUsages')->everyThirtyMinutes();
     }
