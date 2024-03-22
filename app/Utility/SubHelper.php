@@ -177,13 +177,13 @@ function genMultiServersJson($servers)
 
     // Write JSON content to file
     putfile('multiConfLeastPing.json', $jsonContent);
-    //file_put_contents('multiConfLeastPing.json', $jsonContent);
+    file_put_contents('multiConfLeastPing.json', $jsonContent);
     
     $jsonContent = json_encode($JsonConfigs, JSON_PRETTY_PRINT);
 
     // Write JSON content to file
     putfile('multiConf.json', $jsonContent);
-    //file_put_contents('multiConf.json', $jsonContent);
+    file_put_contents('multiConf.json', $jsonContent);
 
 }
 
