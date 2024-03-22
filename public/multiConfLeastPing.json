@@ -315,7 +315,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "xtls-rprx-vision",
-                                "id": "81bd54e2-c420-47b4-8aaa-7e8348f1770a",
+                                "id": "7ed9d16a-7bd4-4c19-8b96-7942c9ea74c7",
                                 "level": null,
                                 "security": null
                             }
@@ -331,8 +331,8 @@
                 },
                 "realitySettings": {
                     "serverName": "reviews.androidcentral.com",
-                    "publicKey": "wtEU33b3eXdC7y1COGEzf4-05aJAkUVNsoV7CBlDBQQ",
-                    "shortId": "A4B4CC92",
+                    "publicKey": "sWn38bn7GYAU7SFGw8XELsgnBaNiipt1CYA4E1LsgRg",
+                    "shortId": "644A6C3B",
                     "fingerprint": "firefox",
                     "spiderX": "\/",
                     "flow": "xtls-rprx-vision"
@@ -351,7 +351,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "4f4089fe-54c2-4d25-9ed6-0a0a71af49af",
+                                "id": "a813f67a-223d-4b7a-b72a-0ade65a18b83",
                                 "level": null,
                                 "security": null
                             }
@@ -365,15 +365,14 @@
                 "wsSettings": {
                     "path": "\/kjAsdsdasD3qWSDc",
                     "headers": {
-                        "Host": "de-01p.allhubb.info"
+                        "Host": "de-01p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
-                        "http\/1.1",
-                        "h2"
+                        "http\/1.1"
                     ],
-                    "serverName": "german-adsl.allhubb.info",
+                    "serverName": "german-adsl.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -390,7 +389,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "xtls-rprx-vision",
-                                "id": "694bd689-c302-473f-8ddc-1cb4b6802b10",
+                                "id": "f2f32a79-63ab-4a61-a8b5-54da67b72879",
                                 "level": null,
                                 "security": null
                             }
@@ -406,8 +405,8 @@
                 },
                 "realitySettings": {
                     "serverName": "gaming.androidcentral.com",
-                    "publicKey": "f0v8BjL7H74y105BL6zlpN80wNF2TigKv1rUxPYGnRk",
-                    "shortId": "4576CDB3",
+                    "publicKey": "ywC2uiPfHGgK0SzAO6lLLDyV_TFVqb7KzUgaFutuxnA",
+                    "shortId": "04F55891",
                     "fingerprint": "firefox",
                     "spiderX": "\/",
                     "flow": "xtls-rprx-vision"
@@ -426,7 +425,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "853956a3-547f-4339-80b9-2325622cf604",
+                                "id": "e653e854-9333-467e-8d00-2366adfd2ae3",
                                 "level": null,
                                 "security": null
                             }
@@ -440,15 +439,14 @@
                 "wsSettings": {
                     "path": "\/AsdASDkjfv;2834",
                     "headers": {
-                        "Host": "de-02p.allhubb.info"
+                        "Host": "de-02p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
-                        "h2",
                         "http\/1.1"
                     ],
-                    "serverName": "admin.allhubb.info",
+                    "serverName": "admin.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -465,7 +463,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "a8111a9a-1ee3-4890-b613-29318564c9be",
+                                "id": "b13399cb-bbdb-4476-b408-e9670391fb36",
                                 "level": null,
                                 "security": null
                             }
@@ -479,14 +477,14 @@
                 "wsSettings": {
                     "path": "\/cdn",
                     "headers": {
-                        "Host": "de-03p.allhubb.info"
+                        "Host": "de-03p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "parspack.allhubb.info",
+                    "serverName": "parspack.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -503,7 +501,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "854b2af4-241d-475a-94e8-011aa1405934",
+                                "id": "22585f87-3710-474e-a530-4d5b9ba64416",
                                 "level": null,
                                 "security": null
                             }
@@ -517,14 +515,14 @@
                 "wsSettings": {
                     "path": "\/asdfvasdfgsafaer",
                     "headers": {
-                        "Host": "de-04p.allhubb.info"
+                        "Host": "de-04p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "cdn.allhubb.info",
+                    "serverName": "cdn.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -541,7 +539,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "cbd3434e-c912-46bf-b9db-441907300e58",
+                                "id": "e3285559-0241-4999-a717-1a6bf3ff716f",
                                 "level": null,
                                 "security": null
                             }
@@ -555,15 +553,14 @@
                 "wsSettings": {
                     "path": "\/cdn",
                     "headers": {
-                        "host": "de-07p.allhubb.info"
+                        "host": "de-07p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
-                        "h2",
                         "http\/1.1"
                     ],
-                    "serverName": "parspack.allhubb.info",
+                    "serverName": "parspack.allhub.shop",
                     "fingerprint": "randomized"
                 }
             },
@@ -580,7 +577,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "36197b15-245b-4a9c-8f84-1ed4417f1e32",
+                                "id": "7ab1493e-81df-450a-9d41-94a71b21df2b",
                                 "level": null,
                                 "security": null
                             }
@@ -594,15 +591,15 @@
                 "wsSettings": {
                     "path": "\/ACDw3c7",
                     "headers": {
-                        "host": "de-08p.allhubb.info"
+                        "host": "de-08p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "admin.allhubb.info",
-                    "fingerprint": "randomized"
+                    "serverName": "admin.allhub.shop",
+                    "fingerprint": "chrome"
                 }
             },
             "tag": "proxy_14"
@@ -617,8 +614,8 @@
                         "users": [
                             {
                                 "encryption": "none",
-                                "flow": "xtls-rprx-vision",
-                                "id": "510b0fcb-6f50-4fb6-870a-3d0fe1e01d33",
+                                "flow": "",
+                                "id": "d7a3cc36-c1a0-459c-8927-4c486781077c",
                                 "level": null,
                                 "security": null
                             }
@@ -634,11 +631,10 @@
                 },
                 "realitySettings": {
                     "serverName": "streaming.androidcentral.com",
-                    "publicKey": "3H--WKbSQ8amz665W1MLNaI0U5aTGwOef6o-nRCcpDw",
-                    "shortId": "2906FD60",
+                    "publicKey": "6X0_v3Mm-MXfTbcuWk0DbM-QeD5KtJmCQzVACjznGEU",
+                    "shortId": "188A604A",
                     "fingerprint": "firefox",
-                    "spiderX": "\/",
-                    "flow": "xtls-rprx-vision"
+                    "spiderX": "\/"
                 }
             },
             "tag": "proxy_15"
@@ -654,7 +650,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "13924211-f787-431e-8c6e-8dc2458fe36c",
+                                "id": "633f4a15-b3af-406f-83d9-9916ed418904",
                                 "level": null,
                                 "security": null
                             }
@@ -668,14 +664,14 @@
                 "wsSettings": {
                     "path": "\/asdg18dWSDaqsdg",
                     "headers": {
-                        "Host": "fr-01p.allhubb.info"
+                        "Host": "fr-01p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "speed.allhubb.info",
+                    "serverName": "speed.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -692,7 +688,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "6c7f0fcf-1e23-4f5a-922a-074daa9e47ef",
+                                "id": "37a73272-67fc-41ec-8adb-b4dbd98a2c9a",
                                 "level": null,
                                 "security": null
                             }
@@ -706,14 +702,14 @@
                 "wsSettings": {
                     "path": "\/cASDJDHQWdna",
                     "headers": {
-                        "Host": "fr-03p.allhubb.info"
+                        "Host": "fr-03p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "blog.allhubb.info",
+                    "serverName": "blog.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -730,7 +726,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "xtls-rprx-vision",
-                                "id": "0c5cf493-211a-485f-b6dc-e41f25b88dd4",
+                                "id": "6ba1e16e-c16a-4160-bf80-9e34f81d9cae",
                                 "level": null,
                                 "security": null
                             }
@@ -746,8 +742,8 @@
                 },
                 "realitySettings": {
                     "serverName": "forums.androidcentral.com",
-                    "publicKey": "3H--WKbSQ8amz665W1MLNaI0U5aTGwOef6o-nRCcpDw",
-                    "shortId": "A739D883",
+                    "publicKey": "x_qVBVwR4mS083F2U8olf_DqzAAdHrbdi4SmvDn7zy8",
+                    "shortId": "C4BEF6C2",
                     "fingerprint": "firefox",
                     "spiderX": "\/",
                     "flow": "xtls-rprx-vision"
@@ -766,7 +762,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "86a58c1c-5281-4aa4-8aeb-34733f468d6f",
+                                "id": "d5b5cbf0-7d51-478e-8303-87b9d128494b",
                                 "level": null,
                                 "security": null
                             }
@@ -780,14 +776,14 @@
                 "wsSettings": {
                     "path": "\/ASDKIOeejnbaw7",
                     "headers": {
-                        "Host": "pl-01p.allhubb.info"
+                        "Host": "pl-01p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "admin.allhubb.info",
+                    "serverName": "admin.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -804,7 +800,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "d4bfe189-f1ed-4239-89b2-14e2c8d43812",
+                                "id": "7832865b-e066-458a-a40f-6af8afd95815",
                                 "level": null,
                                 "security": null
                             }
@@ -818,14 +814,14 @@
                 "wsSettings": {
                     "path": "\/ASJOcp9j23",
                     "headers": {
-                        "Host": "pl-02p.allhubb.info"
+                        "Host": "pl-02p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "admin.allhubb.info",
+                    "serverName": "admin.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -842,7 +838,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "93772240-ed8e-4579-b94f-447bc1bb9042",
+                                "id": "127c036a-cdf8-426b-85b6-d2e317002b85",
                                 "level": null,
                                 "security": null
                             }
@@ -856,14 +852,14 @@
                 "wsSettings": {
                     "path": "\/kshcg873d",
                     "headers": {
-                        "Host": "pl-03p.allhubb.info"
+                        "Host": "pl-03p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "blog.allhubb.info",
+                    "serverName": "blog.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -880,7 +876,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "df9fb8c3-040d-448c-a579-dab33649e911",
+                                "id": "ecb5a157-2ebb-4047-8792-0c4ab78fff43",
                                 "level": null,
                                 "security": null
                             }
@@ -894,14 +890,14 @@
                 "wsSettings": {
                     "path": "\/cdn",
                     "headers": {
-                        "Host": "pl-04p.allhubb.info"
+                        "Host": "pl-04p.allhub.shop"
                     }
                 },
                 "tlsSettings": {
                     "alpn": [
                         "http\/1.1"
                     ],
-                    "serverName": "blog.allhubb.info",
+                    "serverName": "blog.allhub.shop",
                     "fingerprint": "chrome"
                 }
             },
@@ -918,7 +914,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "0220aaf1-5663-4adf-820d-6d1d39c35232",
+                                "id": "edeae630-dc3e-438c-a514-b22fb5bcc77c",
                                 "level": null,
                                 "security": null
                             }
@@ -956,7 +952,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "xtls-rprx-vision",
-                                "id": "7c86bdc7-1e17-4dfc-9e28-571a5a5b191d",
+                                "id": "b3365570-6193-4656-8894-78096809704f",
                                 "level": null,
                                 "security": null
                             }
@@ -972,8 +968,8 @@
                 },
                 "realitySettings": {
                     "serverName": "reviews.androidcentral.com",
-                    "publicKey": "NNDz1a1C7UtkG3OiYwgbAF8cUK3taiucUwQY-qw2jHA",
-                    "shortId": "E55BC20C",
+                    "publicKey": "BjiKtQYEmg6gr53vbJMkPSP8zscEpVU4iwGjGrp9lwA",
+                    "shortId": "7BE22905",
                     "fingerprint": "firefox",
                     "spiderX": "\/",
                     "flow": "xtls-rprx-vision"
@@ -992,7 +988,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "fe76451e-5c43-4ef4-a6db-809356ad93e7",
+                                "id": "15c9d7d5-7294-44ea-ba58-46cc028a6c74",
                                 "level": null,
                                 "security": null
                             }
@@ -1030,7 +1026,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "xtls-rprx-vision",
-                                "id": "bb690a60-a62a-4fbc-b50c-04af2a4a2162",
+                                "id": "b54e9d89-77ed-44a2-8c3a-d7e3da7f3a06",
                                 "level": null,
                                 "security": null
                             }
@@ -1046,8 +1042,8 @@
                 },
                 "realitySettings": {
                     "serverName": "www.speedtest.net",
-                    "publicKey": "wnU_VAz8hK-t5h2A9_tnGbb65xLUsAMUOON0T9xEYkU",
-                    "shortId": "0112322F",
+                    "publicKey": "f0v8BjL7H74y105BL6zlpN80wNF2TigKv1rUxPYGnRk",
+                    "shortId": "63CFCC68",
                     "fingerprint": "firefox",
                     "spiderX": "\/",
                     "flow": "xtls-rprx-vision"
@@ -1066,7 +1062,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "c3f85a7b-0fab-4ded-96b9-f126ecd8c22b",
+                                "id": "dd23fb7e-b541-4fe0-9cce-e555d80ae4ab",
                                 "level": null,
                                 "security": null
                             }
@@ -1168,7 +1164,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "d9895ea1-4337-45a7-b1a9-7c00d34d8827",
+                                "id": "47207bec-3c9a-42a5-9b5c-ce8c088a50cc",
                                 "level": null,
                                 "security": null
                             }
@@ -1206,7 +1202,7 @@
                             {
                                 "encryption": "none",
                                 "flow": "",
-                                "id": "ecfcd42a-6a90-4864-8929-a75f06706f46",
+                                "id": "1208a9e9-dc65-4a30-831e-f48abc99b0d3",
                                 "level": null,
                                 "security": null
                             }
@@ -1222,8 +1218,8 @@
                 },
                 "realitySettings": {
                     "serverName": "www.speedtest.net",
-                    "publicKey": "oUL6sR9g7ywZAM6IUxsFBY_dWie4RHq6PieXjPBeTXc",
-                    "shortId": "80D3CB6F",
+                    "publicKey": "1gpQhyQwyQl-k35tBN9ehBFdBhEfhOjQmQKItZRl3zE",
+                    "shortId": "2FCC0C3B",
                     "fingerprint": "chrome",
                     "spiderX": "\/"
                 }
