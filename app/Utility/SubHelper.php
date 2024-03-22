@@ -7,11 +7,12 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
+
 function getServerUsage($server_id)
 {
 
     $usageRecords = Usage::where('server_id', $server_id)
-        ->whereBetween('created_at',[Carbon::today(),now()])
+        ->whereBetween('created_at', [Carbon::today(), now()])
         ->where('client_id', null)
         ->get();
 
@@ -21,7 +22,7 @@ function getServerUsage($server_id)
         // Calculate the increase in usage
         $totalUsage += $record->upIncrease + $record->downIncrease;
     }
-  
+
     return $totalUsage;
 }
 
@@ -112,9 +113,10 @@ function genMultiServersJson($servers)
 {
     $sampleLeastPing = json_decode(File::get(base_path('/storage/leastSample.json')), 10);
     // Iterate over outbounds array
+    $sockopt = $sampleLeastPing['outbounds'][0]['streamSettings']['sockopt'];
     foreach ($sampleLeastPing['outbounds'] as $key => $outbound) {
         // Check if the tag starts with 'proxy'
-        if (isset($outbound['tag']) && strpos($outbound['tag'], 'proxy') === 0) {
+        if (isset ($outbound['tag']) && strpos($outbound['tag'], 'proxy') === 0) {
             // If it's the first element with a proxy tag, keep it
             unset($sampleLeastPing['outbounds'][$key]);
         }
@@ -164,27 +166,33 @@ function genMultiServersJson($servers)
     }
     //dd($newOutbounds);
 
-
+    $count = 0;
+    $serversOutboundsfrag = [];
     foreach ($serversOutbounds as $index => $bound) {
         $serversOutbounds[$index]['tag'] = 'proxy_' . $index;
-
+        if ($bound['streamSettings']['security'] == 'tls') {
+            $serversOutboundsfrag[$count] = $bound;
+            $serversOutboundsfrag[$count]['tag'] = 'proxy_' . $index . '_frag';
+            $serversOutboundsfrag[$count]['streamSettings']['sockopt'] = $sockopt;
+            $count += 1;
+        }
     }
-    $outbounds = array_merge($serversOutbounds, $baseOutbounds);
+    $outbounds = array_merge($serversOutbounds, $serversOutboundsfrag, $baseOutbounds);
 
 
     $sampleLeastPing['outbounds'] = $outbounds;
     $sampleLeastPing['remarks'] = "least ping";
-    
+
     $jsonContent = json_encode($sampleLeastPing, JSON_PRETTY_PRINT);
 
     // Write JSON content to file
-    
+
     file_put_contents('multiConfLeastPing.json', $jsonContent);
-    
+
     $jsonContent = json_encode($JsonConfigs, JSON_PRETTY_PRINT);
 
     //  Write JSON content to file
-    
+
     file_put_contents('multiConf.json', $jsonContent);
 
 
@@ -284,7 +292,7 @@ function getClientOutbounds($inbound, $client, $address)
     $outbounds[0] = $baseOutbound;
 
 
-    if (isset($stream['externalProxy'])) {
+    if (isset ($stream['externalProxy'])) {
         $externalProxies = $stream['externalProxy'];
 
         if (count($externalProxies) > 0) {
@@ -481,7 +489,7 @@ function genVlessLink($inbound, $client, $address, $remark)
         $tlsSetting = $stream['tlsSettings'];
         $alpns = $tlsSetting['alpn'];
 
-        if (!empty($alpns)) {
+        if (!empty ($alpns)) {
             $params['alpn'] = implode(',', $alpns);
         }
 
@@ -560,11 +568,11 @@ function genVlessLink($inbound, $client, $address, $remark)
         $xtlsSetting = $stream['xtlsSettings'];
         $alpns = $xtlsSetting['alpn'];
 
-        if (!empty($alpns)) {
+        if (!empty ($alpns)) {
             $params['alpn'] = implode(',', $alpns);
         }
 
-        if (isset($xtlsSetting['serverName'])) {
+        if (isset ($xtlsSetting['serverName'])) {
             $params['sni'] = $xtlsSetting['serverName'];
         }
 
@@ -589,7 +597,7 @@ function genVlessLink($inbound, $client, $address, $remark)
         }
     }
     $links = [];
-    if (isset($stream['externalProxy'])) {
+    if (isset ($stream['externalProxy'])) {
         $externalProxies = $stream['externalProxy'];
 
         if (count($externalProxies) > 0) {
@@ -725,7 +733,7 @@ function genTrojanLink($inbound, $client, $address, $remark)
         $tlsSetting = $stream['tlsSettings'];
         $alpns = $tlsSetting['alpn'];
 
-        if (!empty($alpns)) {
+        if (!empty ($alpns)) {
             $params['alpn'] = implode(',', $alpns);
         }
         $sniValue = searchKey($tlsSetting, 'serverName');
@@ -823,7 +831,7 @@ function genTrojanLink($inbound, $client, $address, $remark)
     if ($security !== 'tls' && $security !== 'reality' && $security !== 'xtls') {
         $params['security'] = 'none';
     }
-    if (isset($stream['externalProxy'])) {
+    if (isset ($stream['externalProxy'])) {
         $externalProxies = $stream['externalProxy'];
 
         if (count($externalProxies) > 0) {
@@ -941,7 +949,7 @@ function getSecuritySettings($stream, $client)
             $tlsSetting = $stream['tlsSettings'];
             $alpns = $tlsSetting['alpn'];
 
-            if (!empty($alpns)) {
+            if (!empty ($alpns)) {
                 $params['alpn'] = $alpns;
             }
             $sniValue = searchKey($tlsSetting, 'serverName');
@@ -1035,10 +1043,10 @@ function getNetworkSettings($stream)
             $headers = $ws['headers'];
             // $params['host'] = searchKey($headers, 'host');
             $host = searchKey($headers, 'host');
-            if ($headers){
+            if ($headers) {
                 $params['headers'] = $headers;
             }
-            
+
             break;
         case 'http':
             $http = $stream['httpSettings'];
@@ -1139,29 +1147,29 @@ if (!function_exists('http_build_url')) {
             $parse_url = (array) $url;
 
         // Scheme and Host are always replaced
-        if (isset($parts['scheme']))
+        if (isset ($parts['scheme']))
             $parse_url['scheme'] = $parts['scheme'];
-        if (isset($parts['host']))
+        if (isset ($parts['host']))
             $parse_url['host'] = $parts['host'];
 
         // (If applicable) Replace the original URL with it's new parts
         if ($flags & HTTP_URL_REPLACE) {
             foreach ($keys as $key) {
-                if (isset($parts[$key]))
+                if (isset ($parts[$key]))
                     $parse_url[$key] = $parts[$key];
             }
         } else {
             // Join the original URL path with the new path
-            if (isset($parts['path']) && ($flags & HTTP_URL_JOIN_PATH)) {
-                if (isset($parse_url['path']))
+            if (isset ($parts['path']) && ($flags & HTTP_URL_JOIN_PATH)) {
+                if (isset ($parse_url['path']))
                     $parse_url['path'] = rtrim(str_replace(basename($parse_url['path']), '', $parse_url['path']), '/') . '/' . ltrim($parts['path'], '/');
                 else
                     $parse_url['path'] = $parts['path'];
             }
 
             // Join the original query string with the new query string
-            if (isset($parts['query']) && ($flags & HTTP_URL_JOIN_QUERY)) {
-                if (isset($parse_url['query']))
+            if (isset ($parts['query']) && ($flags & HTTP_URL_JOIN_QUERY)) {
+                if (isset ($parse_url['query']))
                     $parse_url['query'] .= '&' . $parts['query'];
                 else
                     $parse_url['query'] = $parts['query'];
@@ -1179,13 +1187,13 @@ if (!function_exists('http_build_url')) {
         $new_url = $parse_url;
 
         return
-            ((isset($parse_url['scheme'])) ? $parse_url['scheme'] . '://' : '')
-            . ((isset($parse_url['user'])) ? $parse_url['user'] . ((isset($parse_url['pass'])) ? ':' . $parse_url['pass'] : '') . '@' : '')
-            . ((isset($parse_url['host'])) ? $parse_url['host'] : '')
-            . ((isset($parse_url['port'])) ? ':' . $parse_url['port'] : '')
-            . ((isset($parse_url['path'])) ? $parse_url['path'] : '')
-            . ((isset($parse_url['query'])) ? '?' . $parse_url['query'] : '')
-            . ((isset($parse_url['fragment'])) ? '#' . $parse_url['fragment'] : '')
+            ((isset ($parse_url['scheme'])) ? $parse_url['scheme'] . '://' : '')
+            . ((isset ($parse_url['user'])) ? $parse_url['user'] . ((isset ($parse_url['pass'])) ? ':' . $parse_url['pass'] : '') . '@' : '')
+            . ((isset ($parse_url['host'])) ? $parse_url['host'] : '')
+            . ((isset ($parse_url['port'])) ? ':' . $parse_url['port'] : '')
+            . ((isset ($parse_url['path'])) ? $parse_url['path'] : '')
+            . ((isset ($parse_url['query'])) ? '?' . $parse_url['query'] : '')
+            . ((isset ($parse_url['fragment'])) ? '#' . $parse_url['fragment'] : '')
         ;
     }
 }
@@ -1214,13 +1222,18 @@ if (!function_exists('http_build_url')) {
 //     return ['privateKey' => $privateKey, 'publicKey' => $publicKey];
 // }
 
-function generateUUID() {
-    return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+function generateUUID()
+{
+    return sprintf(
+        '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+        mt_rand(0, 0xffff),
+        mt_rand(0, 0xffff),
         mt_rand(0, 0xffff),
         mt_rand(0, 0x0fff) | 0x4000,
         mt_rand(0, 0x3fff) | 0x8000,
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        mt_rand(0, 0xffff),
+        mt_rand(0, 0xffff),
+        mt_rand(0, 0xffff)
     );
 }
 
