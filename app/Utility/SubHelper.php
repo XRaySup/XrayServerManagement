@@ -447,7 +447,10 @@ function genVlessLink($inbound, $client, $address, $remark)
             $ws = $stream['wsSettings'];
             $params['path'] = $ws['path'];
             $headers = $ws['headers'];
-            $params['host'] = searchKey($headers, 'host');
+            $host = searchKey($headers, 'host');
+            if ($host){
+                $params['host'] = $host;
+            }
             break;
         case 'http':
             $http = $stream['httpSettings'];
