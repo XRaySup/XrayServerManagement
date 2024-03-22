@@ -151,6 +151,7 @@ function genMultiServersJson($servers)
                             $singleConf[0] = $sampleLeastPing;
                             $singleConf[0]['outbounds'] = array_merge($clientOutbounds, $baseOutbounds);
                             $singleConf[0]['remarks'] = $server->remark . '-' . $sid;
+                            unset($singleConf[0]['remarks'][4]);
                             $JsonConfigs = array_merge($JsonConfigs, $singleConf);
                         }
                     }
@@ -172,7 +173,8 @@ function genMultiServersJson($servers)
 
 
     $sampleLeastPing['outbounds'] = $outbounds;
-
+    $sampleLeastPing['remarks'] = "least ping";
+    
     $jsonContent = json_encode($sampleLeastPing, JSON_PRETTY_PRINT);
 
     // Write JSON content to file
