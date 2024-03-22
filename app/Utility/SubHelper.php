@@ -151,7 +151,7 @@ function genMultiServersJson($servers)
                             $singleConf[0] = $sampleLeastPing;
                             $singleConf[0]['outbounds'] = array_merge($clientOutbounds, $baseOutbounds);
                             $singleConf[0]['remarks'] = $server->remark . '-' . $sid;
-                            unset($singleConf[0]['remarks'][4]);
+                            unset($singleConf[0]['routing']['rules'][4]);
                             $JsonConfigs = array_merge($JsonConfigs, $singleConf);
                         }
                     }
