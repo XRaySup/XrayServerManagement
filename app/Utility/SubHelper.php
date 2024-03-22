@@ -243,7 +243,7 @@ function getClientOutbounds($inbound, $client, $address)
         case 'trojan':
             $trojanServer['address'] = $address;
             $trojanServer['flow'] = searchKey($inboundSettings, 'flow');
-            $trojanServer['level'] = searchKey($inboundSettings, 'level');
+            $trojanServer['level'] = 8;
             $trojanServer['method'] = searchKey($inboundSettings, 'method');
             $trojanServer['ota'] = searchKey($inboundSettings, 'ota');
             $trojanServer['password'] = searchKey($inboundSettings, 'password');
@@ -255,8 +255,8 @@ function getClientOutbounds($inbound, $client, $address)
             $users[0]['encryption'] = searchKey($inboundSettings, 'decryption');
             $users[0]['flow'] = searchKey($inboundSettings, 'flow');
             $users[0]['id'] = searchKey($inboundSettings, 'id');
-            $users[0]['level'] = searchKey($inboundSettings, 'level');
-            $users[0]['security'] = searchKey($inboundSettings, 'security');
+            $users[0]['level'] = 8;
+            $users[0]['security'] = 'auto';
             $vnext[0]['address'] = $address;
             $vnext[0]['port'] = $inbound['port'];
             $vnext[0]['users'] = $users;

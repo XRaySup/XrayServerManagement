@@ -354,6 +354,24 @@
             "tag": "proxy_6"
         },
         {
+            "tag": "fragment",
+            "protocol": "freedom",
+            "settings": {
+                "domainStrategy": "AsIs",
+                "fragment": {
+                    "packets": "tlshello",
+                    "length": "100-200",
+                    "interval": "10-20"
+                }
+            },
+            "streamSettings": {
+                "sockopt": {
+                    "tcpKeepAliveIdle": 100,
+                    "TcpNoDelay": true
+                }
+            }
+        },
+        {
             "protocol": "freedom",
             "settings": {
                 "domainStrategy": "UseIP"
