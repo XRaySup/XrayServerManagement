@@ -181,9 +181,10 @@ function genMultiServersJson($servers)
     
     $jsonContent = json_encode($JsonConfigs, JSON_PRETTY_PRINT);
 
-    // Write JSON content to file
+    //  Write JSON content to file
     
     file_put_contents('multiConf.json', $jsonContent);
+
 
 }
 
