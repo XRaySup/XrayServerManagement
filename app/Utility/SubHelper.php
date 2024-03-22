@@ -176,40 +176,18 @@ function genMultiServersJson($servers)
     $jsonContent = json_encode($sampleLeastPing, JSON_PRETTY_PRINT);
 
     // Write JSON content to file
-    putfile('multiConfLeastPing.json', $jsonContent);
-    //file_put_contents('multiConfLeastPing.json', $jsonContent);
+    
+    file_put_contents('multiConfLeastPing.json', $jsonContent);
     
     $jsonContent = json_encode($JsonConfigs, JSON_PRETTY_PRINT);
 
     // Write JSON content to file
-    putfile('multiConf.json', $jsonContent);
-    //file_put_contents('multiConf.json', $jsonContent);
+    
+    file_put_contents('multiConf.json', $jsonContent);
 
 }
 
-function putfile($filePath,$fileContents) {
 
-    
-    try {
-        // Write to the file
-        File::put($filePath, $fileContents);
-    
-        // If you need to set permissions explicitly
-        // File::chmod($filePath, 0664);
-    
-        // If you need to change ownership explicitly
-        // File::chown($filePath, 'username', 'groupname');
-    
-        // Success message
-        echo "File written successfully.";
-        dump('File written successfully.');
-    } catch (\Throwable $e) {
-        // Handle the exception
-        echo "Error writing to file: " . $e->getMessage();
-        dump("Error writing to file: " . $e->getMessage());
-    }
-
-}
 function genMultiServersLink($servers)
 {
     $serversLinks = '';
