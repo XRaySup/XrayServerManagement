@@ -13,6 +13,7 @@ return new class extends Migration {
             $table->string('address');
             $table->string('ipv4');
             $table->string('ipv6')->nullable();
+            $table->string('remark')->nullable();
             $table->string('ssh_user')->nullable();
             $table->string('ssh_password')->nullable();
             $table->unsignedBigInteger('xui_port')->default(2052)->nullable();

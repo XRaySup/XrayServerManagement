@@ -4,8 +4,42 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "002848ada9ade9a3be784f1fefb19092",
+    "content-hash": "8e11f63bc0b3de1579f850a96414b950",
     "packages": [
+        {
+            "name": "alirezax5/check-host",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alirezax5/checkHost.git",
+                "reference": "054cd2e03640a4b2dfbef135b9bc9e351b267818"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/alirezax5/checkHost/zipball/054cd2e03640a4b2dfbef135b9bc9e351b267818",
+                "reference": "054cd2e03640a4b2dfbef135b9bc9e351b267818",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Alirezax5\\CheckHost\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "alirezax5",
+                    "email": "alirezaaghax6@gmail.com"
+                }
+            ],
+            "description": "check-host.net api php",
+            "support": {
+                "issues": "https://github.com/alirezax5/checkHost/issues",
+                "source": "https://github.com/alirezax5/checkHost/tree/1.0.0"
+            },
+            "time": "2023-05-02T12:59:29+00:00"
+        },
         {
             "name": "anourvalar/eloquent-serialize",
             "version": "1.2.17",

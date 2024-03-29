@@ -20,6 +20,7 @@ use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -40,7 +41,8 @@ class ServerResource extends Resource
             ->schema([
                 TextInput::make('name')
                     ->required(),
-                TextInput::make('address'),
+                TextInput::make('address')
+                    ->required(),
                 TextInput::make('remark'),
                 TagsInput::make('tags'),
                 TextInput::make('ipv4')
@@ -59,6 +61,9 @@ class ServerResource extends Resource
                         ]),
                 Select::make('project_id')
                     ->relationship('project', 'name'),
+                Select::make('status')
+                    ->options(Server::stats())
+                    ->default('DRAFT')
 
             ]);
     }
@@ -77,12 +82,23 @@ class ServerResource extends Resource
 
                 TextColumn::make('owner.name'),
 
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'ONLINE' => 'success',
+                        'OFFLINE' => 'danger',
+                        'ARCHIVED' => 'gray',
+                        'DRAFT' => 'warning'
+                    }),
+
                 TextColumn::make('today usage'),
 
 
             ])
             ->filters([
-                //
+                SelectFilter::make('status')
+                ->options(Server::stats())
+//                    ->default('ONLINE')
             ])
             ->actions([
                 EditAction::make(),
@@ -98,13 +114,42 @@ class ServerResource extends Resource
                             ->success()
                             ->body('' . round($usage, 1) . 'GB')
                             ->send();
-                        //dump($usage / 1024 / 1024 / 1024);
-                        // $lastUsageRow = Usage::where('server_id', $server['id'])
-                        // ->where('client_id', null)
-                        // ->orderBy('timestamp', 'desc')
-                        // ->latest()->first();
-                        // dd($lastUsageRow);
-            
+
+                        // Optionally, you can return a message or redirect to a different page
+                        return redirect()->back()->with('message', 'Connected to API successfully!');
+                    }),
+                Action::make('cHost')
+                    ->label('Check')
+                    ->action(function (Server $server) {
+                        $message = $server->ipv4;
+                        $message .= "\n";
+                        $CheckHost = new \Alirezax5\CheckHost\CheckHost($server->ipv4);
+                        $nodes = ['ir1' => [], 'ir3' => [], 'ir5' => [], 'ir6' => []];
+                        foreach ($nodes as $nodeTag => $node) {
+
+                            $CheckHost->node($nodeTag);
+                        }
+                        $result = $CheckHost->ping();
+                        foreach ($result as $nID => $node) {
+                            $message .= $nID . ' :  ';
+                            //dump($node[0]);
+                            $count = 0;
+                            foreach ($node[0] as $try) {
+                                if ($try[0] == 'OK') {
+                                    $count += 1;
+
+                                }
+                                //dump($try[0]);
+                            }
+                            $message .= "$count/4\n";
+                        }
+
+                        Notification::make()
+                            ->title('Check-Host Results:')
+                            ->success()
+                            ->body($message)
+                            ->send();
+
                         // Optionally, you can return a message or redirect to a different page
                         return redirect()->back()->with('message', 'Connected to API successfully!');
                     }),
@@ -142,6 +187,7 @@ class ServerResource extends Resource
                         genMultiServersJson($servers);
                         genMultiServersLink($servers);
 
+
                     }),
             ])
             ->headerActions([
@@ -152,17 +198,20 @@ class ServerResource extends Resource
                         $servers = Server::all();
                         genMultiServersJson($servers);
                         genMultiServersLink($servers);
+                        Notification::make()
+                            ->title('Subscription Updated!')
+                            ->success()
+                            ->send();
 
                     }),
                 Action::make('updateUsage')
                     ->label('Update Usage')
                     ->action(function () {
                         updateUsages();
-                        //$servers = Server::all();
-                        //genMultiServersJson($servers);
-                        //genMultiServersLink($servers);
-            
-
+                        Notification::make()
+                            ->title('Usage Updated!')
+                            ->success()
+                            ->send();
                     }),
             ]);
     }

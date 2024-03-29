@@ -47,6 +47,13 @@ class Server extends Model
         return $this->belongsTo(Project::class);
     }
 
+
+
+    public static function stats(): array
+    {
+        return ['ONLINE'=>'ONLINE','OFFLINE'=>'OFFLINE','ARCHIVED'=>'ARCHIVED','DRAFT'=>'DRAFT'];
+    }
+
     //private $baseUrl;
     // Getter method
     // public function __get($name)

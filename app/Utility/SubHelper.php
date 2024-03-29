@@ -187,13 +187,13 @@ function genMultiServersJson($servers)
 
     // Write JSON content to file
 
-    file_put_contents('multiConfLeastPing.json', $jsonContent);
+    file_put_contents('storage/multiConfLeastPing.json', $jsonContent);
 
     $jsonContent = json_encode($JsonConfigs, JSON_PRETTY_PRINT);
 
     //  Write JSON content to file
 
-    file_put_contents('multiConf.json', $jsonContent);
+    file_put_contents('storage/multiConf.json', $jsonContent);
 
 
 }
@@ -237,7 +237,7 @@ function genMultiServersLink($servers)
     }
 
 
-    file_put_contents('links.sub', $serversLinks);
+    file_put_contents('storage/links.sub', $serversLinks);
 }
 function getClientOutbounds($inbound, $client, $address)
 {
