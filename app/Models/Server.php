@@ -51,7 +51,7 @@ class Server extends Model
 
     public static function stats(): array
     {
-        return ['ONLINE'=>'ONLINE','OFFLINE'=>'OFFLINE','ARCHIVED'=>'ARCHIVED','DRAFT'=>'DRAFT'];
+        return ['ONLINE' => 'ONLINE', 'OFFLINE' => 'OFFLINE', 'ARCHIVED' => 'ARCHIVED', 'DRAFT' => 'DRAFT'];
     }
 
     //private $baseUrl;
@@ -73,11 +73,11 @@ class Server extends Model
         $port = $this->xui_port;
 
         $url = parse_url($this->address);
-        if (isset($url['port'])) {
+        if (isset ($url['port'])) {
             $port = $url['port'];
         }
-        if (!isset($url['host'])) {
-            if (isset($url['path'])) {
+        if (!isset ($url['host'])) {
+            if (isset ($url['path'])) {
                 $host = $url['path'];
             } else {
                 return;
@@ -86,7 +86,7 @@ class Server extends Model
             $host = $url['host'];
         }
 
-        if (isset($url['scheme'])) {
+        if (isset ($url['scheme'])) {
             $scheme = $url['scheme'];
         } else {
 
@@ -133,7 +133,7 @@ class Server extends Model
     public function setInboundsStat()
     {
         // If the session cookie is empty, initiate the login process to obtain a new cookie
-        if (empty($this->sessionCookie)) {
+        if (empty ($this->sessionCookie)) {
             log::info('No cookies available, login again!');
             $loginResponse = $this->loginAndGetSessionCookie();
             if ($loginResponse['success'] == false) {
@@ -148,6 +148,7 @@ class Server extends Model
         $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
         if ($response['success'] == false) {
             log::error($response['error']);
+            $this->update(['status' => 'OFFLINE']);
             return null;
         }
         if ($response['data'] == null) {
@@ -156,7 +157,7 @@ class Server extends Model
             $loginResponse = $this->loginAndGetSessionCookie();
             if ($loginResponse['success'] == false) {
                 log::error($loginResponse['error']);
-
+                $this->update(['status' => 'OFFLINE']);
                 return null;
             }
 
@@ -166,16 +167,17 @@ class Server extends Model
 
         if ($response['success'] == false) {
             log::error('Login failed for the second time!');
-
+            $this->update(['status' => 'OFFLINE']);
             return;
         }
         if ($response['data'] == null) {
-
+            $this->update(['status' => 'OFFLINE']);
             Log::error("2nd wrong cookie!");
             return null;
         }
 
         // If successful, update the model with the new inboundStat
+        $this->update(['status' => 'ONLINE']);
         $inboundStat = $response['data']['obj'];
         //dump($inboundStat);
         $this->update(['inboundStat' => $inboundStat]);
@@ -185,9 +187,9 @@ class Server extends Model
             return;
         }
         $url = parse_url($this->address);
-        if (isset($url['host'])) {
+        if (isset ($url['host'])) {
             $address = $url['host'];
-        } elseif (isset($url['path'])) {
+        } elseif (isset ($url['path'])) {
             $address = $url['path'];
         } else {
             return;
@@ -355,9 +357,9 @@ class Server extends Model
 
             //$newUUID = generateUUID();
             foreach ($inbound['settings']['clients'] as $cid => $client) {
-                $inbound['settings']['clients'] [$cid]['id'] = generateUUID();
-                unset($inbound['settings']['clients'] [$cid]['outbounds']) ;
-                unset($inbound['settings']['clients'] [$cid]['links']) ;
+                $inbound['settings']['clients'][$cid]['id'] = generateUUID();
+                unset($inbound['settings']['clients'][$cid]['outbounds']);
+                unset($inbound['settings']['clients'][$cid]['links']);
             }
 
             //echo 'UUID old: ' . $inbound['parsedSettings']['clients'][0]['id'] . ' New: ' . $newUUID . ' .' . PHP_EOL;
