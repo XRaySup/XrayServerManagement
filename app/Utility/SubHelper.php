@@ -28,86 +28,18 @@ function getServerUsage($server_id)
 
 function updateUsages()
 {
-    log::info('updateUsages!');
     $servers = Server::all();
-    foreach ($servers as $sid => $server) {
-        //Connecting to server and get inbounds
-
-        $server->setInboundsStat();
-
-        if ($server->inbounds == null) {
-            continue;
-        }
-
-        foreach ($server->inbounds as $index => $inbound) {
-
-            if ($inbound['enable']) {
-                $lastUsageRow = Usage::where('server_id', $server['id'])
-                    ->where('inbound_id', $inbound['id'])
-                    ->where('client_id', null)
-                    ->orderBy('timestamp', 'desc')
-                    ->latest()
-                    ->first();
-                if ($lastUsageRow === null) {
-                    $lastUp = 0;
-                    $lastDown = 0;
-                } else {
-                    $lastUp = $lastUsageRow->up;
-                    $lastDown = $lastUsageRow->down;
-                }
-                //dd($inbound);
-                // Calculate the increase in usage
-                $upIncrease = max(0, $inbound['up'] - $lastUp);
-                $downIncrease = max(0, $inbound['down'] - $lastDown);
-
-                Usage::create([
-                    'server_id' => $server['id'],
-                    'inbound_id' => $inbound['id'],
-                    'client_id' => null,
-                    'up' => $inbound['up'],
-                    'down' => $inbound['down'],
-                    'upIncrease' => $upIncrease,
-                    'downIncrease' => $downIncrease,
-                    //'timestamps' => now(), // assuming timestamp field exists
-                ]);
-                foreach ($inbound['clientStats'] as $cid => $client) {
-                    if ($client['enable']) {
-                        $lastUsageRow = Usage::where('server_id', $server['id'])
-                            ->where('inbound_id', $inbound['id'])
-                            ->where('client_id', $client['id'])
-                            ->orderBy('timestamp', 'desc')
-                            ->latest()
-                            ->first();
-                        if ($lastUsageRow === null) {
-                            $lastUp = 0;
-                            $lastDown = 0;
-                        } else {
-                            $lastUp = $lastUsageRow->up;
-                            $lastDown = $lastUsageRow->down;
-                        }
-                        // Calculate the increase in usage
-                        $upIncrease = max(0, $client['up'] - $lastUp);
-                        $downIncrease = max(0, $client['down'] - $lastDown);
-
-                        Usage::create([
-                            'server_id' => $server['id'],
-                            'inbound_id' => $inbound['id'],
-                            'client_id' => $client['id'],
-                            'up' => $client['up'],
-                            'down' => $client['down'],
-                            'upIncrease' => $upIncrease,
-                            'downIncrease' => $downIncrease,
-                            //'timestamps' => now(), // assuming timestamp field exists
-                        ]);
-                    }
-                }
-            }
-
-        }
-
-
+    foreach ($servers as $server) {
+         $server->updateUsages();
     }
-    //dump(Usage::all());
+}
+
+function updateServers()
+{
+    updateUsages();
+    $servers = Server::all();
+    genMultiServersJson($servers);
+    genMultiServersLink($servers);
 }
 function genMultiServersJson($servers)
 {
@@ -116,7 +48,7 @@ function genMultiServersJson($servers)
     $sockopt = $sampleLeastPing['outbounds'][0]['streamSettings']['sockopt'];
     foreach ($sampleLeastPing['outbounds'] as $key => $outbound) {
         // Check if the tag starts with 'proxy'
-        if (isset ($outbound['tag']) && strpos($outbound['tag'], 'proxy') === 0) {
+        if (isset($outbound['tag']) && strpos($outbound['tag'], 'proxy') === 0) {
             // If it's the first element with a proxy tag, keep it
             unset($sampleLeastPing['outbounds'][$key]);
         }
@@ -129,7 +61,7 @@ function genMultiServersJson($servers)
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
 
-        $server->setInboundsStat();
+        $server->connect();
 
         if ($server->inbounds == null) {
             continue;
@@ -164,7 +96,7 @@ function genMultiServersJson($servers)
 
 
     }
-    //dd($newOutbounds);
+ 
 
     $count = 0;
     $serversOutboundsfrag = [];
@@ -205,7 +137,7 @@ function genMultiServersLink($servers)
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
 
-        $server->setInboundsStat();
+        $server->connect();
 
         if ($server->inbounds == null) {
             continue;
@@ -292,7 +224,7 @@ function getClientOutbounds($inbound, $client, $address)
     $outbounds[0] = $baseOutbound;
 
 
-    if (isset ($stream['externalProxy'])) {
+    if (isset($stream['externalProxy'])) {
         $externalProxies = $stream['externalProxy'];
 
         if (count($externalProxies) > 0) {
@@ -337,39 +269,6 @@ function getClientOutbounds($inbound, $client, $address)
     return $outbounds;
 }
 
-// function genServerLinks($record)
-// {
-//     $links = '';
-//     $inboundStat = $record->setInboundsStat();
-//     if ($inboundStat == null) {
-//         return 'connection failed';
-//     }
-//     ;
-
-//     $url = parse_url($record->address);
-//     if (isset($url['host'])) {
-//         $address = $url['host'];
-//     } elseif (isset($url['path'])) {
-//         $address = $url['path'];
-//     } else {
-//         return;
-//     }
-
-//     foreach ($inboundStat as $inbound) {
-//         if ($inbound['enable']) {
-//             $settings = json_decode($inbound['settings'], true);
-//             foreach ($settings['clients'] as $client) {
-//                 if ($client['enable']) {
-//                     $links .= getLink($inbound, $client, $address, $record->remark) . "\n";
-//                     // Do something with $link, for example, print it
-
-//                 }
-
-//             }
-//         }
-//     }
-//     return $links;
-// }
 
 function getClientLinks($inbound, $client, $address, $remark)
 {
@@ -386,23 +285,6 @@ function getClientLinks($inbound, $client, $address, $remark)
     }
     return '';
 }
-// if (!function_exists('getLink')) {
-//     function getLink($inbound, $client, $address, $remark)
-//     {
-
-//         switch ($inbound['protocol']) {
-//             case 'vmess':
-//                 return genVmessLink($inbound, $client, $address, $remark);
-//             case 'vless':
-//                 return genVlessLink($inbound, $client, $address, $remark);
-//             case 'trojan':
-//                 return genTrojanLink($inbound, $client, $address, $remark);
-//             case 'shadowsocks':
-//                 return genShadowsocksLink($inbound, $client, $address, $remark);
-//         }
-//         return '';
-//     }
-// }
 
 
 function genVmessLink($inbound, $client, $address, $remark)
@@ -489,7 +371,7 @@ function genVlessLink($inbound, $client, $address, $remark)
         $tlsSetting = $stream['tlsSettings'];
         $alpns = $tlsSetting['alpn'];
 
-        if (!empty ($alpns)) {
+        if (!empty($alpns)) {
             $params['alpn'] = implode(',', $alpns);
         }
 
@@ -568,11 +450,11 @@ function genVlessLink($inbound, $client, $address, $remark)
         $xtlsSetting = $stream['xtlsSettings'];
         $alpns = $xtlsSetting['alpn'];
 
-        if (!empty ($alpns)) {
+        if (!empty($alpns)) {
             $params['alpn'] = implode(',', $alpns);
         }
 
-        if (isset ($xtlsSetting['serverName'])) {
+        if (isset($xtlsSetting['serverName'])) {
             $params['sni'] = $xtlsSetting['serverName'];
         }
 
@@ -597,7 +479,7 @@ function genVlessLink($inbound, $client, $address, $remark)
         }
     }
     $links = [];
-    if (isset ($stream['externalProxy'])) {
+    if (isset($stream['externalProxy'])) {
         $externalProxies = $stream['externalProxy'];
 
         if (count($externalProxies) > 0) {
@@ -733,7 +615,7 @@ function genTrojanLink($inbound, $client, $address, $remark)
         $tlsSetting = $stream['tlsSettings'];
         $alpns = $tlsSetting['alpn'];
 
-        if (!empty ($alpns)) {
+        if (!empty($alpns)) {
             $params['alpn'] = implode(',', $alpns);
         }
         $sniValue = searchKey($tlsSetting, 'serverName');
@@ -831,7 +713,7 @@ function genTrojanLink($inbound, $client, $address, $remark)
     if ($security !== 'tls' && $security !== 'reality' && $security !== 'xtls') {
         $params['security'] = 'none';
     }
-    if (isset ($stream['externalProxy'])) {
+    if (isset($stream['externalProxy'])) {
         $externalProxies = $stream['externalProxy'];
 
         if (count($externalProxies) > 0) {
@@ -949,7 +831,7 @@ function getSecuritySettings($stream, $client)
             $tlsSetting = $stream['tlsSettings'];
             $alpns = $tlsSetting['alpn'];
 
-            if (!empty ($alpns)) {
+            if (!empty($alpns)) {
                 $params['alpn'] = $alpns;
             }
             $sniValue = searchKey($tlsSetting, 'serverName');
@@ -1147,29 +1029,29 @@ if (!function_exists('http_build_url')) {
             $parse_url = (array) $url;
 
         // Scheme and Host are always replaced
-        if (isset ($parts['scheme']))
+        if (isset($parts['scheme']))
             $parse_url['scheme'] = $parts['scheme'];
-        if (isset ($parts['host']))
+        if (isset($parts['host']))
             $parse_url['host'] = $parts['host'];
 
         // (If applicable) Replace the original URL with it's new parts
         if ($flags & HTTP_URL_REPLACE) {
             foreach ($keys as $key) {
-                if (isset ($parts[$key]))
+                if (isset($parts[$key]))
                     $parse_url[$key] = $parts[$key];
             }
         } else {
             // Join the original URL path with the new path
-            if (isset ($parts['path']) && ($flags & HTTP_URL_JOIN_PATH)) {
-                if (isset ($parse_url['path']))
+            if (isset($parts['path']) && ($flags & HTTP_URL_JOIN_PATH)) {
+                if (isset($parse_url['path']))
                     $parse_url['path'] = rtrim(str_replace(basename($parse_url['path']), '', $parse_url['path']), '/') . '/' . ltrim($parts['path'], '/');
                 else
                     $parse_url['path'] = $parts['path'];
             }
 
             // Join the original query string with the new query string
-            if (isset ($parts['query']) && ($flags & HTTP_URL_JOIN_QUERY)) {
-                if (isset ($parse_url['query']))
+            if (isset($parts['query']) && ($flags & HTTP_URL_JOIN_QUERY)) {
+                if (isset($parse_url['query']))
                     $parse_url['query'] .= '&' . $parts['query'];
                 else
                     $parse_url['query'] = $parts['query'];
@@ -1187,13 +1069,13 @@ if (!function_exists('http_build_url')) {
         $new_url = $parse_url;
 
         return
-            ((isset ($parse_url['scheme'])) ? $parse_url['scheme'] . '://' : '')
-            . ((isset ($parse_url['user'])) ? $parse_url['user'] . ((isset ($parse_url['pass'])) ? ':' . $parse_url['pass'] : '') . '@' : '')
-            . ((isset ($parse_url['host'])) ? $parse_url['host'] : '')
-            . ((isset ($parse_url['port'])) ? ':' . $parse_url['port'] : '')
-            . ((isset ($parse_url['path'])) ? $parse_url['path'] : '')
-            . ((isset ($parse_url['query'])) ? '?' . $parse_url['query'] : '')
-            . ((isset ($parse_url['fragment'])) ? '#' . $parse_url['fragment'] : '')
+            ((isset($parse_url['scheme'])) ? $parse_url['scheme'] . '://' : '')
+            . ((isset($parse_url['user'])) ? $parse_url['user'] . ((isset($parse_url['pass'])) ? ':' . $parse_url['pass'] : '') . '@' : '')
+            . ((isset($parse_url['host'])) ? $parse_url['host'] : '')
+            . ((isset($parse_url['port'])) ? ':' . $parse_url['port'] : '')
+            . ((isset($parse_url['path'])) ? $parse_url['path'] : '')
+            . ((isset($parse_url['query'])) ? '?' . $parse_url['query'] : '')
+            . ((isset($parse_url['fragment'])) ? '#' . $parse_url['fragment'] : '')
         ;
     }
 }

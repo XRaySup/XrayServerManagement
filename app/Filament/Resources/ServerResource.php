@@ -84,7 +84,7 @@ class ServerResource extends Resource
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'ONLINE' => 'success',
                         'OFFLINE' => 'danger',
                         'ARCHIVED' => 'gray',
@@ -97,8 +97,8 @@ class ServerResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('status')
-                ->options(Server::stats())
-//                    ->default('ONLINE')
+                    ->options(Server::stats())
+                    ->default('ONLINE')
             ])
             ->actions([
                 EditAction::make(),
@@ -130,16 +130,19 @@ class ServerResource extends Resource
                             $CheckHost->node($nodeTag);
                         }
                         $result = $CheckHost->ping();
+                        
                         foreach ($result as $nID => $node) {
                             $message .= $nID . ' :  ';
-                            //dump($node[0]);
+                            
                             $count = 0;
-                            foreach ($node[0] as $try) {
-                                if ($try[0] == 'OK') {
-                                    $count += 1;
+                            if ($node != null) {
+                                foreach ($node[0] as $try) {
+                                    if ($try[0] == 'OK') {
+                                        $count += 1;
 
+                                    }
+                                    //dump($try[0]);
                                 }
-                                //dump($try[0]);
                             }
                             $message .= "$count/4\n";
                         }
@@ -196,8 +199,11 @@ class ServerResource extends Resource
                     ->action(function () {
 
                         $servers = Server::all();
-                        genMultiServersJson($servers);
-                        genMultiServersLink($servers);
+                        $activeServers = $servers->filter(function ($server) {
+                            return $server->status === 'ONLINE' || $server->status === 'OFFLINE';
+                        });
+                        genMultiServersJson($activeServers);
+                        genMultiServersLink($activeServers);
                         Notification::make()
                             ->title('Subscription Updated!')
                             ->success()

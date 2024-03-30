@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
     {
         
         // $schedule->command('inspire')->hourly();
-        $schedule->call('updateUsages')->everyThirtyMinutes();
+        $schedule->call('updateServers')->everyThirtyMinutes();
     }
 
     /**

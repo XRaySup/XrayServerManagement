@@ -73,11 +73,11 @@ class Server extends Model
         $port = $this->xui_port;
 
         $url = parse_url($this->address);
-        if (isset ($url['port'])) {
+        if (isset($url['port'])) {
             $port = $url['port'];
         }
-        if (!isset ($url['host'])) {
-            if (isset ($url['path'])) {
+        if (!isset($url['host'])) {
+            if (isset($url['path'])) {
                 $host = $url['path'];
             } else {
                 return;
@@ -86,7 +86,7 @@ class Server extends Model
             $host = $url['host'];
         }
 
-        if (isset ($url['scheme'])) {
+        if (isset($url['scheme'])) {
             $scheme = $url['scheme'];
         } else {
 
@@ -121,80 +121,25 @@ class Server extends Model
         return round(getServerUsage($this->id) / 1024 / 1024 / 1024, 1);
     }
 
-    // public static function boot()
-    // {
-    //     parent::boot();
 
-    //     self::retrieved(function ($model) {# Called after data loaded from db
-    //         //dd($model);
-    //         //$this->usage = getServerUsage($this->id)/ 1024 / 1024 / 1024;
-    //     });
-    // }
-    public function setInboundsStat()
+    public function connect()
     {
-        // If the session cookie is empty, initiate the login process to obtain a new cookie
-        if (empty ($this->sessionCookie)) {
-            log::info('No cookies available, login again!');
-            $loginResponse = $this->loginAndGetSessionCookie();
-            if ($loginResponse['success'] == false) {
-                log::error($loginResponse['error']);
-                return null;
-            }
-
-        }
-        //$apiUrl = $this->baseUrl;
-        $endpoint = '/panel/api/inbounds/list';
-        $url = $this->baseUrl . $endpoint;
-        $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
-        if ($response['success'] == false) {
-            log::error($response['error']);
-            $this->update(['status' => 'OFFLINE']);
-            return null;
-        }
-        if ($response['data'] == null) {
-
-            Log::info("First wrong cookie. login again!");
-            $loginResponse = $this->loginAndGetSessionCookie();
-            if ($loginResponse['success'] == false) {
-                log::error($loginResponse['error']);
-                $this->update(['status' => 'OFFLINE']);
-                return null;
-            }
-
-            $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
-
-        }
-
-        if ($response['success'] == false) {
-            log::error('Login failed for the second time!');
-            $this->update(['status' => 'OFFLINE']);
-            return;
-        }
-        if ($response['data'] == null) {
-            $this->update(['status' => 'OFFLINE']);
-            Log::error("2nd wrong cookie!");
-            return null;
-        }
-
-        // If successful, update the model with the new inboundStat
-        $this->update(['status' => 'ONLINE']);
-        $inboundStat = $response['data']['obj'];
-        //dump($inboundStat);
-        $this->update(['inboundStat' => $inboundStat]);
-
+        $inboundStat = $this->getInboundsStat();
 
         if ($inboundStat == null) {
+            $this->update(['status' => 'OFFLINE']);
             return;
         }
+        $this->update(['status' => 'ONLINE']);
+        $this->update(['inboundStat' => $inboundStat]);
         $url = parse_url($this->address);
-        if (isset ($url['host'])) {
+        if (isset($url['host'])) {
             $address = $url['host'];
-        } elseif (isset ($url['path'])) {
+        } elseif (isset($url['path'])) {
             $address = $url['path'];
         } else {
             return;
         }
-
         foreach ($inboundStat as $index => $inbound) {
 
             $inbound['settings'] = json_decode($inbound['settings'], true);
@@ -208,9 +153,57 @@ class Server extends Model
 
             }
             $inboundStat[$index] = $inbound;
+
+        }
+        $this->inbounds = $inboundStat;
+    }
+    private function getInboundsStat()
+    {
+        // If the session cookie is empty, initiate the login process to obtain a new cookie
+        if (empty($this->sessionCookie)) {
+            log::info('No cookies available, login again!');
+            $loginResponse = $this->loginAndGetSessionCookie();
+            if ($loginResponse['success'] == false) {
+                log::error($loginResponse['error']);
+                return;
+            }
+
+        }
+        //$apiUrl = $this->baseUrl;
+        $endpoint = '/panel/api/inbounds/list';
+        $url = $this->baseUrl . $endpoint;
+        $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
+        if ($response['success'] == false) {
+            log::error($response['error']);
+            $this->update(['status' => 'OFFLINE']);
+            return;
+        }
+        if ($response['data'] == null) {
+
+            Log::info("First wrong cookie. login again!");
+            $loginResponse = $this->loginAndGetSessionCookie();
+            if ($loginResponse['success'] == false) {
+                log::error($loginResponse['error']);
+
+                return;
+            }
+
+            $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
+
         }
 
-        $this->inbounds = $inboundStat;
+        if ($response['success'] == false) {
+            log::error('Login failed for the second time!');
+
+            return;
+        }
+        if ($response['data'] == null) {
+
+            Log::error("2nd wrong cookie!");
+            return;
+        }
+
+        return $response['data']['obj'];
     }
 
     private function loginAndGetSessionCookie()
@@ -252,9 +245,9 @@ class Server extends Model
         }
 
         $responseJson = $loginResponse->json();
-        //dd($responseJson);
+
         if ($responseJson['success'] == false) {
-            //dd($responseJson['msg']);
+
             Log::error("Login failed: " . $responseJson['msg']);
             return [
                 'success' => false,
@@ -302,7 +295,7 @@ class Server extends Model
         ];
     }
 
-    function updateInbound($newInbound)
+    private function updateInbound($newInbound)
     {
         $url = $this->baseUrl . "/panel/api/inbounds/update/" . $newInbound['id'];
 
@@ -325,19 +318,20 @@ class Server extends Model
             $context = stream_context_create($options);
             $response = file_get_contents($url, false, $context);
             $result = json_decode($response, true);
-            //echo 'Inbound updated' . PHP_EOL;
-            //dump($result);
+
         } catch (Exception $error) {
             echo 'Error: ' . $error->getMessage() . PHP_EOL;
         }
-        //dump('done');
-    }
-    function updateInbounds()
-    {
 
-        $this->setInboundsStat();
-        //dump($this->inboundStat);
-        //$jsonInbounds = json_decode($this->inboundStat, true);
+    }
+    public function updateInbounds()
+    {
+        if ($this->inbounds == null) {
+            $this->connect();
+            if ($this->inbounds == null) {
+                return;
+            }
+        }
         foreach ($this->inbounds as $id => $inbound) {
 
             $jsonInbound = $this->inboundStat[$id];
@@ -355,23 +349,97 @@ class Server extends Model
                 // $inbound['parsedStream']['realitySettings']['shortIds'][0] = $shortID;
             }
 
-            //$newUUID = generateUUID();
+
             foreach ($inbound['settings']['clients'] as $cid => $client) {
                 $inbound['settings']['clients'][$cid]['id'] = generateUUID();
                 unset($inbound['settings']['clients'][$cid]['outbounds']);
                 unset($inbound['settings']['clients'][$cid]['links']);
             }
 
-            //echo 'UUID old: ' . $inbound['parsedSettings']['clients'][0]['id'] . ' New: ' . $newUUID . ' .' . PHP_EOL;
-            //$inbound['streamSettings']['clients'][0]['id'] = $newUUID;
-
-
-            //$jsonInbound['streamSettings'] = json_encode($inbound['streamSettings'], JSON_PRETTY_PRINT);
             $jsonInbound['settings'] = json_encode($inbound['settings'], JSON_PRETTY_PRINT);
-            //dd($jsonInbound);
+
             $this->updateInbound($jsonInbound);
         }
-        //dump('done All');
+
+    }
+
+    public function updateUsages()
+    {
+
+        if ($this->inbounds == null) {
+            $this->connect();
+            if ($this->inbounds == null) {
+                return;
+            }
+        }
+
+        foreach ($this->inbounds as $index => $inbound) {
+
+            if ($inbound['enable']) {
+                $lastUsageRow = Usage::where('server_id', $this->id)
+                    ->where('inbound_id', $inbound['id'])
+                    ->where('client_id', null)
+                    ->orderBy('timestamp', 'desc')
+                    ->latest()
+                    ->first();
+                if ($lastUsageRow === null) {
+                    $lastUp = 0;
+                    $lastDown = 0;
+                } else {
+                    $lastUp = $lastUsageRow->up;
+                    $lastDown = $lastUsageRow->down;
+                }
+
+                // Calculate the increase in usage
+                $upIncrease = max(0, $inbound['up'] - $lastUp);
+                $downIncrease = max(0, $inbound['down'] - $lastDown);
+
+                Usage::create([
+                    'server_id' => $this->id,
+                    'inbound_id' => $inbound['id'],
+                    'client_id' => null,
+                    'up' => $inbound['up'],
+                    'down' => $inbound['down'],
+                    'upIncrease' => $upIncrease,
+                    'downIncrease' => $downIncrease,
+
+                ]);
+                foreach ($inbound['clientStats'] as $cid => $client) {
+                    if ($client['enable']) {
+                        $lastUsageRow = Usage::where('server_id', $this->id)
+                            ->where('inbound_id', $inbound['id'])
+                            ->where('client_id', $client['id'])
+                            ->orderBy('timestamp', 'desc')
+                            ->latest()
+                            ->first();
+                        if ($lastUsageRow === null) {
+                            $lastUp = 0;
+                            $lastDown = 0;
+                        } else {
+                            $lastUp = $lastUsageRow->up;
+                            $lastDown = $lastUsageRow->down;
+                        }
+                        // Calculate the increase in usage
+                        $upIncrease = max(0, $client['up'] - $lastUp);
+                        $downIncrease = max(0, $client['down'] - $lastDown);
+
+                        Usage::create([
+                            'server_id' => $this->id,
+                            'inbound_id' => $inbound['id'],
+                            'client_id' => $client['id'],
+                            'up' => $client['up'],
+                            'down' => $client['down'],
+                            'upIncrease' => $upIncrease,
+                            'downIncrease' => $downIncrease,
+                        ]);
+                    }
+                }
+            }
+
+        }
+
+
+
     }
 
 
