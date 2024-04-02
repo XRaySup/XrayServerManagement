@@ -182,11 +182,12 @@ function getClientOutbounds($inbound, $client, $address)
     $baseOutbound["protocol"] = $inbound['protocol'];
     switch ($inbound['protocol']) {
         case 'trojan':
+            dump($inbound);
             $trojanServer['address'] = $address;
             $trojanServer['flow'] = searchKey($inboundSettings, 'flow');
             $trojanServer['level'] = 8;
-            $trojanServer['method'] = searchKey($inboundSettings, 'method');
-            $trojanServer['ota'] = searchKey($inboundSettings, 'ota');
+            $trojanServer['method'] = 'chacha20-poly1305';
+            $trojanServer['ota'] = false;
             $trojanServer['password'] = searchKey($inboundSettings, 'password');
             $trojanServer['port'] = searchKey($inboundSettings, 'port');
             $baseOutbound["settings"]['servers'][0] = $trojanServer;
