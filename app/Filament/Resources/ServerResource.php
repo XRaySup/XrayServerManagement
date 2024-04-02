@@ -103,23 +103,8 @@ class ServerResource extends Resource
             ->actions([
                 EditAction::make(),
                 DeleteAction::make(),
-                Action::make('lastUsage')
-                    ->label('Usage')
-                    ->action(function (Server $server) {
-                        $usage = getServerUsage($server->id) / 1024 / 1024 / 1024;
-
-
-                        Notification::make()
-                            ->title('Latest usage recorded:')
-                            ->success()
-                            ->body('' . round($usage, 1) . 'GB')
-                            ->send();
-
-                        // Optionally, you can return a message or redirect to a different page
-                        return redirect()->back()->with('message', 'Connected to API successfully!');
-                    }),
                 Action::make('cHost')
-                    ->label('Check')
+                    ->label('Ping')
                     ->action(function (Server $server) {
                         $message = $server->ipv4;
                         $message .= "\n";
@@ -157,7 +142,7 @@ class ServerResource extends Resource
                         return redirect()->back()->with('message', 'Connected to API successfully!');
                     }),
                 Action::make('UpdateInbounds')
-                    ->label('Update Inbounds')
+                    ->label('Reset Inbounds')
                     ->action(function (Server $server) {
                         $server->updateInbounds();
 
