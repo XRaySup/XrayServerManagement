@@ -113,7 +113,7 @@ function genMultiServersJson($servers)
 
 
     $sampleLeastPing['outbounds'] = $outbounds;
-    $sampleLeastPing['remarks'] = "least ping";
+    $sampleLeastPing['remarks'] = "⭐️least ping⭐️";
 
     $jsonContent = json_encode($sampleLeastPing, JSON_PRETTY_PRINT);
 
@@ -182,7 +182,6 @@ function getClientOutbounds($inbound, $client, $address)
     $baseOutbound["protocol"] = $inbound['protocol'];
     switch ($inbound['protocol']) {
         case 'trojan':
-            dump($inbound);
             $trojanServer['address'] = $address;
             $trojanServer['flow'] = searchKey($inboundSettings, 'flow');
             $trojanServer['level'] = 8;
@@ -923,8 +922,7 @@ function getNetworkSettings($stream)
             $ws = $stream['wsSettings'];
             $params['path'] = $ws['path'];
             $headers = $ws['headers'];
-            // $params['host'] = searchKey($headers, 'host');
-            $host = searchKey($headers, 'host');
+            //$host = searchKey($headers, 'host');
             if ($headers) {
                 $params['headers'] = $headers;
             }

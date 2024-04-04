@@ -158,7 +158,7 @@ class ServerResource extends Resource
                 Action::make('OpenMobaSSH')
                     ->label('Moba')
                     ->url(function (Server $record) {
-                        $link = 'mobaxterm:' . urlencode($record->tag . '=' . '#109#0%' . $record->ipv4 . '%22%' . $record->ssh_user . '%%-1%-1%sudo su');
+                        $link = 'mobaxterm:' . urlencode($record->name . '=' . '#109#0%' . $record->ipv4 . '%22%' . $record->ssh_user . '%%-1%-1%sudo%20su');
 
                         return $link;
                     })
