@@ -1,0 +1,172 @@
+{
+    "dns": {
+        "hosts": {
+            "geosite:category-ads-all": "127.0.0.1",
+            "geosite:category-ads-ir": "127.0.0.1",
+            "domain:googleapis.cn": "googleapis.com"
+        },
+        "servers": [
+            "https://94.140.14.14/dns-query",
+            {
+                "address": "1.1.1.1",
+                "domains": [
+                    "geosite:private",
+                    "geosite:category-ir",
+                    "domain:.ir"
+                ],
+                "expectIPs": [
+                    "geoip:cn"
+                ],
+                "port": 53
+            }
+        ]
+    },
+    "fakedns": [
+        {
+            "ipPool": "198.18.0.0/15",
+            "poolSize": 10000
+        }
+    ],
+    "inbounds": [
+        {
+            "port": 10808,
+            "protocol": "socks",
+            "settings": {
+                "auth": "noauth",
+                "udp": true,
+                "userLevel": 8
+            },
+            "sniffing": {
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "fakedns"
+                ],
+                "enabled": true
+            },
+            "tag": "socks"
+        },
+        {
+            "port": 10809,
+            "protocol": "http",
+            "settings": {
+                "userLevel": 8
+            },
+            "tag": "http"
+        }
+    ],
+    "log": {
+        "loglevel": "debug"
+    },
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "settings": {
+                "domainStrategy": "UseIP"
+            },
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "settings": {
+                "response": {
+                    "type": "http"
+                }
+            },
+            "tag": "block"
+        }
+    ],
+    "policy": {
+        "levels": {
+            "8": {
+                "connIdle": 300,
+                "downlinkOnly": 1,
+                "handshake": 4,
+                "uplinkOnly": 1
+            }
+        },
+        "system": {
+            "statsOutboundUplink": true,
+            "statsOutboundDownlink": true
+        }
+    },
+    "routing": {
+        "domainStrategy": "IPIfNonMatch",
+        "rules": [
+            {
+                "ip": [
+                    "1.1.1.1"
+                ],
+                "outboundTag": "direct",
+                "port": "53",
+                "type": "field"
+            },
+            {
+                "domain": [
+                    "geosite:private",
+                    "geosite:category-ir",
+                    "domain:.ir"
+                ],
+                "outboundTag": "direct",
+                "type": "field"
+            },
+            {
+                "ip": [
+                    "geoip:private",
+                    "geoip:ir"
+                ],
+                "outboundTag": "direct",
+                "type": "field"
+            },
+            {
+                "domain": [
+                    "geosite:category-ads-all",
+                    "geosite:category-ads-ir"
+                ],
+                "outboundTag": "block",
+                "type": "field"
+            },
+            {
+                "balancerTag": "all",
+                "type": "field",
+                "network": "tcp,udp"
+            }
+        ],
+        "balancers": [
+            {
+                "tag": "all",
+                "selector": [
+                    "pr",
+                    "pf"
+                ],
+                "strategy": {
+                    "type": "leastload"
+                }
+            }
+        ]
+    },
+    "burstObservatory": {
+        "subjectSelector": [
+            "pr",
+            "pf"
+        ],
+        "pingConfig": {
+            "destination": "http://www.apple.com/library/test/success.html",
+            "interval": "2m",
+            "connectivity": "http://connectivitycheck.platform.hicloud.com/generate_204",
+            "timeout": "4s",
+            "sampling": 3,
+            "EnableConcurrency": true
+        }
+    },
+    "observatory": {
+        "probeInterval": "2m",
+        "probeURL": "https://api.github.com/_private/browser/stats",
+        "subjectSelector": [
+            "pr",
+            "pf"
+        ],
+        "EnableConcurrency": true
+    },
+    "remarks": "⭐️least ping⭐️"
+}

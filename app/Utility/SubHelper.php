@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 
+
 function getServerUsage($server_id)
 {
 
@@ -30,7 +31,7 @@ function updateUsages()
 {
     $servers = Server::all();
     foreach ($servers as $server) {
-         $server->updateUsages();
+        $server->updateUsages();
     }
 }
 
@@ -38,29 +39,253 @@ function updateServers()
 {
     updateUsages();
     $servers = Server::all();
-    genMultiServersJson($servers);
-    genMultiServersLink($servers);
+    genMultiServersJson($servers,'all');
+    genMultiServersJson($servers,'VPN');
+    genMultiServersJson($servers,'VIP');
+    genMultiServersLink($servers, 'all');
+    genMultiServersLink($servers, 'VPN');
+    genMultiServersLink($servers, 'VIP');
 }
-function genMultiServersJson($servers)
+function genMultiServersJson($servers, $filter)
 {
-    $sampleLeastPing = json_decode(File::get(base_path('/storage/leastSample.json')), 10);
-    // Iterate over outbounds array
-    $sockopt = $sampleLeastPing['outbounds'][0]['streamSettings']['sockopt'];
-    foreach ($sampleLeastPing['outbounds'] as $key => $outbound) {
-        // Check if the tag starts with 'proxy'
-        if (isset($outbound['tag']) && strpos($outbound['tag'], 'proxy') === 0) {
-            // If it's the first element with a proxy tag, keep it
-            unset($sampleLeastPing['outbounds'][$key]);
-        }
+    if ($filter == '') {
+        $filter = 'all';
     }
-    $sampleLeastPing['dns']['servers'][1]['port'] = 53;
+    $dirFragment = json_decode('[{
+        "protocol": "freedom",
+        "settings": {
+          "domainStrategy": "UseIP",
+          "fragment": {
+            "interval": "1-1",
+            "length": "10-20",
+            "packets": "tlshello"
+          }
+        },
+        "streamSettings": {
+          "network": "tcp",
+          "security": "",
+          "sockopt": {
+            "tcpNoDelay": true,
+            "tcpKeepAliveIdle": 100
+          }
+        },
+        "tag": "dir-fragment"
+    }]');
 
+    $FragmentA = json_decode('[{
+        "tag": "fragment",
+        "protocol": "freedom",
+        "settings": {
+            "domainStrategy": "AsIs",
+            "fragment": {
+                "packets": "tlshello",
+                "length": "100-200",
+                "interval": "10-20"
+            }
+        },
+        "streamSettings": {
+            "sockopt": {
+                "tcpKeepAliveIdle": 100,
+                "TcpNoDelay": true
+            }
+        }
+    }]',10);
+
+    $sockopt = json_decode('{
+        "dialerProxy": "fragment",
+        "tcpKeepAliveIdle": 100,
+        "tcpNoDelay": true
+    }',10);
+
+    $dnsIranDIR = json_decode('{
+        "hosts": {
+            "geosite:category-ads-all": "127.0.0.1",
+            "geosite:category-ads-ir": "127.0.0.1",
+            "domain:googleapis.cn": "googleapis.com"
+        },
+        "servers": [
+            "https://94.140.14.14/dns-query",
+            {
+                "address": "1.1.1.1",
+                "domains": [
+                    "geosite:private",
+                    "geosite:category-ir",
+                    "domain:.ir"
+                ],
+                "expectIPs": [
+                    "geoip:cn"
+                ],
+                "port": 53
+            }
+        ]
+    }',10);
+
+    $dns = json_decode('{
+        "hosts": {
+            "geosite:category-ads-all": "127.0.0.1",
+            "domain:googleapis.cn": "googleapis.com"
+        },
+        "servers": [
+            "https://94.140.14.14/dns-query",
+            {
+                "address": "1.1.1.1",
+                "domains": [
+                    "geosite:private",
+                    "domain:.ir"
+                ],
+                "port": 53
+            }
+        ]
+    }',10);
+
+    $rulesIranDIR = json_decode('[
+        {
+            "ip": [
+                "1.1.1.1"
+            ],
+            "outboundTag": "direct",
+            "port": "53",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:private",
+                "geosite:category-ir",
+                "domain:.ir"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "ip": [
+                "geoip:private",
+                "geoip:ir"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:category-ads-all",
+                "geosite:category-ads-ir"
+            ],
+            "outboundTag": "block",
+            "type": "field"
+        },
+        {
+            "balancerTag": "all",
+            "type": "field",
+            "network": "tcp,udp"
+        }
+    ]',10);
+
+    $rules = json_decode('[
+        {
+            "ip": [
+                "1.1.1.1"
+            ],
+            "outboundTag": "direct",
+            "port": "53",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:private",
+                "domain:.ir"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "ip": [
+                "geoip:private"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:category-ads-all"
+            ],
+            "outboundTag": "block",
+            "type": "field"
+        },
+        {
+            "balancerTag": "all",
+            "type": "field",
+            "network": "tcp,udp"
+        }
+    ]',10);
+
+    $rulesMagic = json_decode('[
+        {
+            "ip": [
+                "1.1.1.1"
+            ],
+            "outboundTag": "direct",
+            "port": "53",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:private",
+                "domain:.ir"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "ip": [
+                "geoip:private"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:category-ads-all"
+            ],
+            "outboundTag": "block",
+            "type": "field"
+        },
+        {
+            "domain": [
+              "geosite:twitter",
+              "geosite:facebook",
+              "geosite:google",
+              "geosite:telegram",
+              "domain:speedtest.net"
+            ],
+            "outboundTag": "dir-fragment",
+            "type": "field"
+          },
+        {
+            "balancerTag": "all",
+            "type": "field",
+            "network": "tcp,udp"
+        }
+    ]',10);
+
+
+    $mux = json_decode('{
+        "enabled": true,
+        "concurrency": 8,
+        "xudpConcurrency": 8,
+        "xudpProxyUDP443": "reject"
+      }',10);
+
+    $sampleLeastPing = json_decode(File::get(base_path('/storage/leastSample-IranDir.json')), 10);
+    //$sampleMagic = json_decode(File::get(base_path('/storage/leastSample.json')), 10);
     $baseOutbounds = $sampleLeastPing['outbounds'];
     $serversOutbounds = [];
     $JsonConfigs = [];
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
-
+        if ($filter != 'all') {
+            if (!str_contains($server->name, $filter)) {
+                continue;
+            }
+        }
         $server->connect();
 
         if ($server->inbounds == null) {
@@ -78,7 +303,7 @@ function genMultiServersJson($servers)
 
                             $serversOutbounds = array_merge($serversOutbounds, $clientOutbounds);
                             foreach ($clientOutbounds as $index => $bound) {
-                                $clientOutbounds[$index]['tag'] = 'proxy_' . $index;
+                                $clientOutbounds[$index]['tag'] = 'p' . $index;
 
                             }
                             //$singleConfOutbounds = array_merge($clientOutbounds,$baseOutbounds);
@@ -96,51 +321,93 @@ function genMultiServersJson($servers)
 
 
     }
- 
+    $FragmentA[0]['tag'] = "fragmentA";
+    $FragmentB = $FragmentA;
+    $FragmentB[0]['tag'] = "fragmentB";
+
+    $FragmentB[0]['settings']['fragment']['length'] = "15-30";
+    $FragmentB[0]['settings']['fragment']['interval'] = "1-1";
 
     $count = 0;
     $serversOutboundsfrag = [];
     foreach ($serversOutbounds as $index => $bound) {
-        $serversOutbounds[$index]['tag'] = 'proxy_' . $index;
+        $serversOutbounds[$index]['tag'] = 'pr' . $index;
+        $serversOutbounds[$index]['mux'] = $mux;
+        $bound ['mux'] = $mux;
         if ($bound['streamSettings']['security'] == 'tls') {
             $serversOutboundsfrag[$count] = $bound;
-            $serversOutboundsfrag[$count]['tag'] = 'proxy_' . $index . '_frag';
+            $serversOutboundsfrag[$count]['tag'] = 'pfA' . $index ;
             $serversOutboundsfrag[$count]['streamSettings']['sockopt'] = $sockopt;
+            $count += 1;
+            $serversOutboundsfrag[$count] = $bound;
+            $serversOutboundsfrag[$count]['tag'] = 'pfB' . $index ;
+            $serversOutboundsfrag[$count]['streamSettings']['sockopt'] = $sockopt;
+            $serversOutboundsfrag[$count]['streamSettings']['sockopt']['dialerProxy'] = 'FragmentB';
             $count += 1;
         }
     }
-    $outbounds = array_merge($serversOutbounds, $serversOutboundsfrag, $baseOutbounds);
 
+    //$dirFragment,$FragmentA, $FragmentB,
+    $outbounds = array_merge( $serversOutboundsfrag, $serversOutbounds,$dirFragment,$FragmentA, $FragmentB,$baseOutbounds);
 
+    //dd($dirFragment);
     $sampleLeastPing['outbounds'] = $outbounds;
-    $sampleLeastPing['remarks'] = "⭐️least ping⭐️";
+    $sampleLeastPing['remarks'] = "🕊Toomaj IRDIR🕊";
 
-    $jsonContent = json_encode($sampleLeastPing, JSON_PRETTY_PRINT);
+    $multiLeast[0] = $sampleLeastPing;
+
+    $sampleLeastPing['remarks'] = "🕊Toomaj Special🕊";
+
+    $sampleLeastPing['dns'] = $dns;
+
+    $sampleLeastPing['routing']['rules'] = $rules;
+
+    $multiLeast[1] = $sampleLeastPing;
+    
+    $sampleLeastPing['routing']['rules'] = $rulesMagic;
+    $sampleLeastPing['remarks'] = "🕊Magic 4 Toomaj🕊";
+
+    $multiLeast[2] = $sampleLeastPing;
+
+    $jsonContent = json_encode($multiLeast, JSON_PRETTY_PRINT);
 
     // Write JSON content to file
-    
-    file_put_contents(public_path('storage/multiConfLeastPing.json'), $jsonContent);
+
+    file_put_contents(public_path('storage/' . $filter . 'MultiLeast.json'), $jsonContent);
+
+
+
 
     $jsonContent = json_encode($JsonConfigs, JSON_PRETTY_PRINT);
 
     //  Write JSON content to file
-    
-    file_put_contents(public_path('storage/multiConf.json'), $jsonContent);
+
+    file_put_contents(public_path('storage/' . $filter . '-multiConf.json'), $jsonContent);
 
 
 }
 
 
-function genMultiServersLink($servers)
+function genMultiServersLink($servers, $filter)
 {
+    if ($filter == '') {
+        $filter = 'all';
+    }
     $serversLinks = '';
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
-
-        $server->connect();
-
+        if ($filter != 'all') {
+            if (!str_contains($server->name, $filter)) {
+                continue;
+            }
+        }
         if ($server->inbounds == null) {
-            continue;
+
+            $server->connect();
+            if ($server->inbounds == null) {
+
+                continue;
+            }
         }
         $serversLinks .= "\n";
         $serversLinks .= '### Server: ' . $server['remark'] . ' : ' . $server['name'] . "\n";
@@ -167,8 +434,8 @@ function genMultiServersLink($servers)
 
 
     }
-    
-    file_put_contents(public_path('storage/links.sub'), $serversLinks);
+
+    file_put_contents(public_path('storage/' . $filter . '-links.sub'), $serversLinks);
 }
 function getClientOutbounds($inbound, $client, $address)
 {
@@ -922,9 +1189,11 @@ function getNetworkSettings($stream)
             $ws = $stream['wsSettings'];
             $params['path'] = $ws['path'];
             $headers = $ws['headers'];
-            //$host = searchKey($headers, 'host');
+            $host = searchKey($headers, 'host');
+            //dump($stream);
             if ($headers) {
-                $params['headers'] = $headers;
+                //dump($headers);
+                $params['headers']['Host'] = $host;
             }
 
             break;

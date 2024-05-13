@@ -1,0 +1,160 @@
+{
+    "dns": {
+      "queryStrategy": "UseIP",
+      "servers": [
+        "https://8.8.8.8/dns-query"
+      ],
+      "tag": "dns"
+    },
+    "inbounds": [
+      {
+        "port": 10808,
+        "protocol": "socks",
+        "settings": {
+          "auth": "noauth",
+          "udp": true,
+          "userLevel": 8
+        },
+        "sniffing": {
+          "destOverride": [
+            "http",
+            "tls",
+            "fakedns"
+          ],
+          "enabled": true
+        },
+        "tag": "socks"
+      },
+      {
+        "port": 10809,
+        "protocol": "http",
+        "settings": {
+          "userLevel": 8
+        },
+        "tag": "http"
+      }
+    ],
+    "log": {
+      "loglevel": "warning"
+    },
+    "outbounds": [
+      {
+        "protocol": "freedom",
+        "settings": {
+          "domainStrategy": "UseIP"
+        },
+        "tag": "direct"
+      },
+      {
+        "protocol": "blackhole",
+        "settings": {
+          "response": {
+            "type": "http"
+          }
+        },
+        "tag": "block"
+      }
+    ],
+    "policy": {
+      "levels": {
+        "8": {
+          "connIdle": 300,
+          "downlinkOnly": 1,
+          "handshake": 4,
+          "uplinkOnly": 1
+        }
+      },
+      "system": {
+        "statsOutboundUplink": true,
+        "statsOutboundDownlink": true
+      }
+    },
+    "remarks": "⭐️Magic 4⭐️",
+    "routing": {
+      "domainStrategy": "IPIfNonMatch",
+      "rules": [
+        {
+            "ip": [
+                "1.1.1.1"
+            ],
+            "outboundTag": "direct",
+            "port": "53",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:private",
+                "geosite:category-ir",
+                "domain:.ir"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "ip": [
+                "geoip:private",
+                "geoip:ir"
+            ],
+            "outboundTag": "direct",
+            "type": "field"
+        },
+        {
+            "domain": [
+                "geosite:category-ads-all",
+                "geosite:category-ads-ir"
+            ],
+            "outboundTag": "block",
+            "type": "field"
+        },
+        {
+          "domain": [
+            "geosite:twitter",
+            "geosite:facebook",
+            "geosite:google",
+            "geosite:telegram",
+            "domain:speedtest.net"
+          ],
+          "outboundTag": "dir-fragment",
+          "type": "field"
+        },
+        {
+          "balancerTag": "all",
+          "type": "field",
+          "network": "tcp,udp"
+        }
+      ],
+      "balancers": [
+          {
+              "tag": "all",
+              "selector": [
+                  "proxy"
+              ],
+              "strategy": {
+                  "type": "leastload"
+              }
+          }
+      ]
+    },
+    "burstObservatory": {
+        "subjectSelector": [
+            "proxy"
+        ],
+        "pingConfig": {
+            "destination": "http://www.apple.com/library/test/success.html",
+            "interval": "2m",
+            "connectivity": "http://connectivitycheck.platform.hicloud.com/generate_204",
+            "timeout": "4s",
+            "sampling": 3,
+            "EnableConcurrency": true
+        }
+    },
+    "observatory": {
+        "probeInterval": "2m",
+        "probeURL": "https://api.github.com/_private/browser/stats",
+        "subjectSelector": [
+            "proxy"
+        ],
+        "EnableConcurrency": true
+    },
+    "stats": {}
+  }
