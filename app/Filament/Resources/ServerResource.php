@@ -74,7 +74,7 @@ class ServerResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable(true),
 
                 TextColumn::make('remark'),
 
@@ -93,6 +93,7 @@ class ServerResource extends Resource
 
 
             ])
+            ->defaultSort('name', 'desc')
             ->filters([
                 SelectFilter::make('status')
                     ->options(Server::stats())
