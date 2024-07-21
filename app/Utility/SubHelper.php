@@ -21,14 +21,15 @@ function updateServers()
 {
     
 
-     updateUsages();
+    //  updateUsages();
      $servers = Server::all()->sortBy('name');
-     genMultiServersJson($servers, 'all');
-     genMultiServersJson($servers, 'VPN');
-     genMultiServersJson($servers, 'VIP');
-     genMultiServersLink($servers, 'all');
-     genMultiServersLink($servers, 'VPN');
-     genMultiServersLink($servers, 'VIP');
+        //dump ($servers);
+    //  genMultiServersJson($servers, 'all');
+    //  genMultiServersJson($servers, 'VPN');
+    //  genMultiServersJson($servers, 'VIP');
+      genMultiServersLink($servers, 'all');
+    //  genMultiServersLink($servers, 'VPN');
+    //  genMultiServersLink($servers, 'VIP');
 
     
 }
