@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServerResource\Pages;
 use App\Models\Server;
-use App\Models\Usage;
+//use App\Models\Usage;
 //use App\Services\ApiConnectorService;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -76,9 +76,7 @@ class ServerResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('address'),
-
-                TextColumn::make('ipv4'),
+                TextColumn::make('remark'),
 
                 TextColumn::make('owner.name'),
 
@@ -172,8 +170,8 @@ class ServerResource extends Resource
                     ->label('Test Bulk Action')
                     ->action(function (Collection $servers) {
                         //dd($records);
-                        genMultiServersJson($servers);
-                        genMultiServersLink($servers);
+                        genMultiServersJson($servers,"all");
+                        genMultiServersLink($servers,"all");
 
 
                     }),

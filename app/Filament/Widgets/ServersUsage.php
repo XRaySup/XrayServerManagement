@@ -34,7 +34,7 @@ class ServersUsage extends BaseWidget
             ->query(ServerResource::getEloquentQuery())
             ->columns([
 
-                TextColumn::make('name')
+                TextColumn::make('remark')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('today usage')

@@ -1,9 +1,9 @@
 <?php
 
 use App\Models\Server;
-use App\Models\Usage;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Log;
+// use App\Models\Usage;
+// use Illuminate\Support\Facades\URL;
+// use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Yaza\LaravelGoogleDriveStorage\Gdrive;
 use Illuminate\Support\Facades\File;
@@ -21,17 +21,15 @@ function updateServers()
 {
 
 
-    //  updateUsages();
+    updateUsages();
     $servers = Server::all()->sortBy('name');
-    //dump ($servers);
-    //  genMultiServersJson($servers, 'all');
-    //  genMultiServersJson($servers, 'VPN');
-    //  genMultiServersJson($servers, 'VIP');
+
+    genMultiServersJson($servers, 'all');
+    genMultiServersJson($servers, 'VPN');
+    genMultiServersJson($servers, 'VIP');
     genMultiServersLink($servers, 'all');
-    //  genMultiServersLink($servers, 'VPN');
-    //  genMultiServersLink($servers, 'VIP');
-
-
+    genMultiServersLink($servers, 'VPN');
+    genMultiServersLink($servers, 'VIP');
 }
 
 function genMultiServersJson($servers, $filter)
@@ -60,10 +58,13 @@ function genMultiServersJson($servers, $filter)
     $mux = $config->getMux();
 
     $sampleLeastPing = json_decode(File::get(base_path('/storage/leastSample-IranDir.json')), 10);
-    //$sampleMagic = json_decode(File::get(base_path('/storage/leastSample.json')), 10);
+    $sampleBPB = json_decode(File::get(base_path('/storage/SampleBPB.json')), null, 10);
+    $bestFragConfigSample = $sampleBPB[7];
+
     $baseOutbounds = $sampleLeastPing['outbounds'];
     $serversOutbounds = [];
-    $JsonConfigs = [];
+
+    $bestFragConfs = [];
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
 
@@ -72,7 +73,7 @@ function genMultiServersJson($servers, $filter)
         if ($server->inbounds == null) {
             continue;
         }
-
+        $confN = 0;
         foreach ($server->inbounds as $index => $inbound) {
 
             if ($inbound['enable']) {
@@ -91,14 +92,16 @@ function genMultiServersJson($servers, $filter)
 
                             $serversOutbounds = array_merge($serversOutbounds, $clientOutbounds);
                             foreach ($clientOutbounds as $index => $bound) {
-                                $clientOutbounds[$index]['tag'] = 'p' . $index;
+                                $confN += 1;
+
+                                $bestFragConf[0] = clone $bestFragConfigSample;
+                                $bestFragConf[0]->outbounds[0] = $bound;
+                                $bestFragConf[0]->outbounds[0]['tag'] = 'proxy';
+
+                                $bestFragConf[0]->remarks = $server->remark . '-' . $bound['tag'] . '-' . $confN;
+                                $bound['tag'] = 'p' . $index;
+                                $bestFragConfs = array_merge($bestFragConfs, $bestFragConf);
                             }
-                            //$singleConfOutbounds = array_merge($clientOutbounds,$baseOutbounds);
-                            $singleConf[0] = $sampleLeastPing;
-                            $singleConf[0]['outbounds'] = array_merge($clientOutbounds, $baseOutbounds);
-                            $singleConf[0]['remarks'] = $server->remark . '-' . $sid;
-                            unset($singleConf[0]['routing']['rules'][4]);
-                            $JsonConfigs = array_merge($JsonConfigs, $singleConf);
                         }
                     }
                 }
@@ -131,10 +134,10 @@ function genMultiServersJson($servers, $filter)
         }
     }
 
-    //$dirFragment,$FragmentA, $FragmentB,
+
     $outbounds = array_merge($serversOutboundsfrag, $serversOutbounds, $dirFragment, $FragmentA, $FragmentB, $baseOutbounds);
 
-    //dd($dirFragment);
+
     $sampleLeastPing['outbounds'] = $outbounds;
     $sampleLeastPing['remarks'] = "🕊Toomaj IRDIR🕊";
 
@@ -152,22 +155,12 @@ function genMultiServersJson($servers, $filter)
     $sampleLeastPing['remarks'] = "🕊Magic 4 Toomaj🕊";
 
     $multiLeast[2] = $sampleLeastPing;
-
-    $jsonContent = json_encode($multiLeast, JSON_PRETTY_PRINT);
-
-    // Write JSON content to file
-
-    file_put_contents(public_path('storage/' . $filter . 'MultiLeast.json'), $jsonContent);
-    Storage::disk('google')->put('Subs/PanelSubs/' . $filter . 'MultiLeast.json', $jsonContent);
+    $bestFragConfs = array_merge($multiLeast, $bestFragConfs);
 
 
-
-    $jsonContent = json_encode($JsonConfigs, JSON_PRETTY_PRINT);
-
-    //  Write JSON content to file
-
-    file_put_contents(public_path('storage/' . $filter . '-multiConf.json'), $jsonContent);
-    Storage::disk('google')->put('Subs/PanelSubs/' . $filter . '-multiConf.json', $jsonContent);
+    $jsonContent = json_encode($bestFragConfs, JSON_PRETTY_PRINT);
+    file_put_contents(public_path('storage/' . $filter . '-bestFragConf.json'), $jsonContent);
+    Storage::disk('google')->put('Subs/PanelSubs/' . $filter . '-bestFragConf.json', $jsonContent, ['visibility' => "public"]);
 }
 
 
@@ -208,7 +201,7 @@ function genMultiServersLink($servers, $filter)
                         $clientLinks = $client['links'];
                         if ($clientLinks != null) {
 
-                            
+
                             foreach ($clientLinks as $clientLink) {
                                 $linkN += 1;
                                 $serversLinks .= $clientLink . "-" . $linkN . "\n";
@@ -223,7 +216,7 @@ function genMultiServersLink($servers, $filter)
     $Donatet  = Gdrive::get('Subs/' . 'Donated.txt');
     $serversLinks = $Testing->file . "\n" . $serversLinks . "\n" . $Donatet->file;
     file_put_contents(public_path('storage/' . $filter . '-links.sub'), $serversLinks);
-    Storage::disk('google')->put('Subs/PanelSubs/' . $filter . '-links.sub', $serversLinks);
+    Storage::disk('google')->put('Subs/PanelSubs/' . $filter . '-links.sub', $serversLinks, ['visibility' => "public"]);
 }
 function getClientOutbounds($inbound, $client, $address)
 {
@@ -289,7 +282,8 @@ function getClientOutbounds($inbound, $client, $address)
                 $newSecurity = $externalProxy['forceTls'];
                 $dest = $externalProxy['dest'];
                 $port = $externalProxy['port'];
-
+                $tag = $externalProxy['remark'];
+                $newOutbound["tag"] = $tag;
                 switch ($inbound['protocol']) {
                     case 'trojan':
 
