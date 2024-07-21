@@ -22,7 +22,7 @@ function updateServers()
     
 
      updateUsages();
-     $servers = Server::all();
+     $servers = Server::all()->sortBy('name');
      genMultiServersJson($servers, 'all');
      genMultiServersJson($servers, 'VPN');
      genMultiServersJson($servers, 'VIP');
