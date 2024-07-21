@@ -19,19 +19,19 @@ function updateUsages()
 
 function updateServers()
 {
-    
+
 
     //  updateUsages();
-     $servers = Server::all()->sortBy('name');
-        //dump ($servers);
+    $servers = Server::all()->sortBy('name');
+    //dump ($servers);
     //  genMultiServersJson($servers, 'all');
     //  genMultiServersJson($servers, 'VPN');
     //  genMultiServersJson($servers, 'VIP');
-      genMultiServersLink($servers, 'all');
+    genMultiServersLink($servers, 'all');
     //  genMultiServersLink($servers, 'VPN');
     //  genMultiServersLink($servers, 'VIP');
 
-    
+
 }
 
 function genMultiServersJson($servers, $filter)
@@ -176,10 +176,11 @@ function genMultiServersLink($servers, $filter)
     if ($filter == '') {
         $filter = 'all';
     }
+
     $serversLinks = '';
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
-
+        $linkN = 0;
         if ($server->inbounds == null) {
 
             $server->connect();
@@ -207,9 +208,11 @@ function genMultiServersLink($servers, $filter)
                         $clientLinks = $client['links'];
                         if ($clientLinks != null) {
 
-
-                            $serversLinks .= implode("\n", $clientLinks);
-                            $serversLinks .= "\n";
+                            
+                            foreach ($clientLinks as $clientLink) {
+                                $linkN += 1;
+                                $serversLinks .= $clientLink . "-" . $linkN . "\n";
+                            }
                         }
                     }
                 }
