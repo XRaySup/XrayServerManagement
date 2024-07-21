@@ -11,11 +11,13 @@
         "php": "^8.1",
         "alirezax5/check-host": "^1.0",
         "filament/filament": "^3.2",
+        "google/apiclient": "^2.17",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
-        "livewire/livewire": "^3.4"
+        "livewire/livewire": "^3.4",
+        "yaza/laravel-google-drive-storage": "^2.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

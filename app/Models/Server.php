@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class Server extends Model
 {
@@ -54,17 +55,7 @@ class Server extends Model
         return ['ONLINE' => 'ONLINE', 'OFFLINE' => 'OFFLINE', 'ARCHIVED' => 'ARCHIVED', 'DRAFT' => 'DRAFT'];
     }
 
-    //private $baseUrl;
-    // Getter method
-    // public function __get($name)
-    // {
-    //     if ($name == 'baseUrl') {
-    //         return $this->getBaseUrl();
-    //     } else {
-    //         // Handle unknown property or throw an exception
-    //         //throw new Exception("Undefined property: $name");
-    //     }
-    // }
+
 
 
     public function getBaseUrlAttribute()
@@ -98,8 +89,6 @@ class Server extends Model
         //dump($port);
 
         return $scheme . '://' . $host . ':' . $port;
-
-
     }
 
     //public $usage;// = getServerUsage($this->id)/ 1024 / 1024 / 1024;
@@ -118,14 +107,42 @@ class Server extends Model
     // }
     public function getTodayUsageAttribute()
     {
-        return round(getServerUsage($this->id) / 1024 / 1024 / 1024, 1);
+        return round($this->getServerUsage(Carbon::today(), now()) / 1024 / 1024 / 1024, 1);
+    }
+    public function getYesterdayUsageAttribute()
+    {
+        return round($this->getServerUsage(Carbon::yesterday(), Carbon::today()) / 1024 / 1024 / 1024, 1);
     }
 
+    public function getWeeklyUsageAttribute()
+    {
+        return round($this->getServerUsage(Carbon::now()->subWeeks(1), Carbon::today()) / 1024 / 1024 / 1024, 1);
+    }
+
+    function getServerUsage($start, $end)
+    {
+
+        $usageRecords = Usage::where('server_id', $this->id)
+            ->whereBetween('created_at', [$start, $end])
+            ->where('client_id', null)
+            ->get();
+
+        $totalUsage = 0;
+
+        foreach ($usageRecords as $record) {
+            // Calculate the increase in usage
+            $totalUsage += $record->upIncrease + $record->downIncrease;
+        }
+
+        return $totalUsage;
+    }
 
     public function connect()
     {
+        if ($this->status == "ARCHIVED") {
+            return;
+        }
         $inboundStat = $this->getInboundsStat();
-
         if ($inboundStat == null) {
             $this->update(['status' => 'OFFLINE']);
             return;
@@ -150,10 +167,8 @@ class Server extends Model
                 $clientLinks = getClientLinks($inbound, $client, $address, $this->remark);
                 $inbound['settings']['clients'][$cid]['outbounds'] = $clientOutbounds;
                 $inbound['settings']['clients'][$cid]['links'] = $clientLinks;
-
             }
             $inboundStat[$index] = $inbound;
-
         }
         $this->inbounds = $inboundStat;
     }
@@ -167,7 +182,6 @@ class Server extends Model
                 log::error($loginResponse['error']);
                 return;
             }
-
         }
         //$apiUrl = $this->baseUrl;
         $endpoint = '/panel/api/inbounds/list';
@@ -189,7 +203,6 @@ class Server extends Model
             }
 
             $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
-
         }
 
         if ($response['success'] == false) {
@@ -271,10 +284,9 @@ class Server extends Model
 
         try {
             $response = Http::withHeaders([
-                        'Accept' => 'application/json',
-                        'Cookie' => $cookies,
-                    ])->$method($url, $data);
-
+                'Accept' => 'application/json',
+                'Cookie' => $cookies,
+            ])->$method($url, $data);
         } catch (\Exception $e) {
             // Handle exceptions, log errors, or return false as needed
             // You can access the exception message with $e->getMessage()
@@ -318,11 +330,9 @@ class Server extends Model
             $context = stream_context_create($options);
             $response = file_get_contents($url, false, $context);
             $result = json_decode($response, true);
-
         } catch (Exception $error) {
             echo 'Error: ' . $error->getMessage() . PHP_EOL;
         }
-
     }
     public function updateInbounds()
     {
@@ -360,7 +370,6 @@ class Server extends Model
 
             $this->updateInbound($jsonInbound);
         }
-
     }
 
     public function updateUsages()
@@ -435,12 +444,6 @@ class Server extends Model
                     }
                 }
             }
-
         }
-
-
-
     }
-
-
 }
