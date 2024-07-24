@@ -19,52 +19,40 @@ function updateUsages()
 
 function updateServers()
 {
-
-
-    updateUsages();
     $servers = Server::all()->sortBy('name');
-
+    foreach ($servers as $server) {
+        $server->updateUsages();
+    }
     genMultiServersJson($servers, 'all');
     genMultiServersJson($servers, 'VPN');
     genMultiServersJson($servers, 'VIP');
-    genMultiServersLink($servers, 'all');
-    genMultiServersLink($servers, 'VPN');
-    genMultiServersLink($servers, 'VIP');
+    genMultiServersLink($servers);
 }
 
 function genMultiServersJson($servers, $filter)
 {
+
     if ($filter == '') {
         $filter = 'all';
     }
+
     $config = new JsonConf();
-
     $dirFragment = $config->getDirFragment();
-
     $FragmentA = $config->getFragmentA();
-
     $sockopt = $config->getSockopt();
-
     $dnsIranDIR = $config->getDnsIranDIR();
-
     $dns = $config->getDns();
-
     $rulesIranDIR = $config->getRulesIranDIR();
-
     $rules = $config->getRules();
-
     $rulesMagic = $config->getRulesMagic();
-
     $mux = $config->getMux();
-
     $sampleLeastPing = json_decode(File::get(base_path('/storage/leastSample-IranDir.json')), 10);
     $sampleBPB = json_decode(File::get(base_path('/storage/SampleBPB.json')), null, 10);
     $bestFragConfigSample = $sampleBPB[7];
-
     $baseOutbounds = $sampleLeastPing['outbounds'];
     $serversOutbounds = [];
-
     $bestFragConfs = [];
+
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
 
@@ -164,12 +152,31 @@ function genMultiServersJson($servers, $filter)
 }
 
 
-function genMultiServersLink($servers, $filter)
+function genMultiServersLink($servers)
 {
-    if ($filter == '') {
-        $filter = 'all';
-    }
 
+    $Testing  = Gdrive::get('Subs/' . 'Testing.txt');
+    $Donatet  = Gdrive::get('Subs/' . 'Donated.txt');
+    $VPNLinks = genGroupServersLink($servers, 'VPN');
+    $VIPLinks = genGroupServersLink($servers, 'VIP') . "\n" . $Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
+    $VPNLinks = $VPNLinks . "\n" .$Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
+
+    file_put_contents(public_path('storage/VIP-links.sub'), $VIPLinks);
+    Storage::disk('google')->put('Subs/PanelSubs/VIP-links.sub', $VIPLinks, ['visibility' => "public"]);
+
+    file_put_contents(public_path('storage/VIP-links-64.sub'), base64_encode($VIPLinks));
+    Storage::disk('google')->put('Subs/PanelSubs/VIP-links-64.sub', base64_encode($VIPLinks), ['visibility' => "public"]);
+
+
+    file_put_contents(public_path('storage/VPN-links.sub'), $VPNLinks);
+    Storage::disk('google')->put('Subs/PanelSubs/VPN-links.sub', $VPNLinks, ['visibility' => "public"]);
+
+    file_put_contents(public_path('storage/VPN-links-64.sub'), base64_encode($VPNLinks));
+    Storage::disk('google')->put('Subs/PanelSubs/VPN-links-64.sub', base64_encode($VPNLinks), ['visibility' => "public"]);
+}
+
+function genGroupServersLink($servers, $filter)
+{
     $serversLinks = '';
     foreach ($servers as $sid => $server) {
         //Connecting to server and get inbounds
@@ -182,41 +189,51 @@ function genMultiServersLink($servers, $filter)
                 continue;
             }
         }
-        $serversLinks .= "\n";
-        $serversLinks .= '### Server: ' . $server['remark'] . ' : ' . $server['name'] . "\n";
+        $serverlinks = '';
+
         foreach ($server->inbounds as $index => $inbound) {
 
+            $inboundlinks = '';
             if ($inbound['enable']) {
 
-                $serversLinks .= '### Inbound: ' . $inbound['remark'] . "\n";
                 foreach ($inbound['settings']['clients'] as $cid => $client) {
                     if ($client['enable']) {
-                        if ($filter != 'all') {
-                            if ($filter == "VPN" && str_contains($client['email'], "VIP")) {
-                                continue;
-                            } elseif ($filter == "VIP" && !str_contains($client['email'], "VIP")) {
-                                continue;
-                            }
+
+                        if ($filter == "VPN" && str_contains($client['email'], "VIP")) {
+                            continue;
+                        } elseif ($filter == "VIP" && !str_contains($client['email'], "VIP")) {
+                            continue;
                         }
-                        $clientLinks = $client['links'];
-                        if ($clientLinks != null) {
 
 
-                            foreach ($clientLinks as $clientLink) {
+                        //$clientLinks = $client['links'];
+                        if ($client['links'] != null) {
+
+                            //$clientLinks = '';
+                            foreach ($client['links'] as $clientLink) {
                                 $linkN += 1;
-                                $serversLinks .= $clientLink . "-" . $linkN . "\n";
+                                if (str_contains($client['email'], "VIP")) {
+                                    $parts = explode('#', $clientLink);
+                                    $clientLink = $parts[0] . '#💎' . str_replace('⭐', '', $server->remark);
+                                }
+                                $inboundlinks .= $clientLink . "-" . $linkN . "\n";
                             }
                         }
                     }
                 }
+                if ($inboundlinks != '') {
+                    $serverlinks .= '### Inbound: ' . $inbound['remark'] . "\n";
+                    $serverlinks .= $inboundlinks;
+                }
             }
         }
+        if ($serverlinks != '') {
+            $serversLinks .= "\n";
+            $serversLinks .= '### Server: ' . $server['remark'] . ' : ' . $server['name'] . "\n" . $serverlinks;
+        }
     }
-    $Testing  = Gdrive::get('Subs/' . 'Testing.txt');
-    $Donatet  = Gdrive::get('Subs/' . 'Donated.txt');
-    $serversLinks = $Testing->file . "\n" . $serversLinks . "\n" . $Donatet->file;
-    file_put_contents(public_path('storage/' . $filter . '-links.sub'), $serversLinks);
-    Storage::disk('google')->put('Subs/PanelSubs/' . $filter . '-links.sub', $serversLinks, ['visibility' => "public"]);
+
+    return $serversLinks;
 }
 function getClientOutbounds($inbound, $client, $address)
 {
@@ -267,9 +284,8 @@ function getClientOutbounds($inbound, $client, $address)
 
 
     $baseOutbound['streamSettings'] = $streamSettings;
-
+    $baseOutbound["tag"] = '';
     $outbounds[0] = $baseOutbound;
-
 
     if (isset($stream['externalProxy'])) {
         $externalProxies = $stream['externalProxy'];

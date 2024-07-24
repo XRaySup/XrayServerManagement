@@ -139,6 +139,9 @@ class Server extends Model
 
     public function connect()
     {
+        if ($this->inbounds != null) {
+            return;
+        }
         if ($this->status == "ARCHIVED") {
             return;
         }
@@ -375,12 +378,12 @@ class Server extends Model
     public function updateUsages()
     {
 
+
+        $this->connect();
         if ($this->inbounds == null) {
-            $this->connect();
-            if ($this->inbounds == null) {
-                return;
-            }
+            return;
         }
+
 
         foreach ($this->inbounds as $index => $inbound) {
 
