@@ -159,7 +159,7 @@ function genMultiServersLink($servers)
     $Donatet  = Gdrive::get('Subs/' . 'Donated.txt');
     $VPNLinks = genGroupServersLink($servers, 'VPN');
     $VIPLinks = genGroupServersLink($servers, 'VIP') . "\n" . $Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
-    $VPNLinks = $VPNLinks . "\n" .$Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
+    $VPNLinks = $Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
 
     file_put_contents(public_path('storage/VIP-links.sub'), $VIPLinks);
     Storage::disk('google')->put('Subs/PanelSubs/VIP-links.sub', $VIPLinks, ['visibility' => "public"]);
