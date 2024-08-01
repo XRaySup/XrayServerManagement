@@ -157,9 +157,13 @@ function genMultiServersLink($servers)
 
     $Testing  = Gdrive::get('Subs/' . 'Testing.txt');
     $Donatet  = Gdrive::get('Subs/' . 'Donated.txt');
-    $VPNLinks = genGroupServersLink($servers, 'VPN');
-    $VIPLinks = genGroupServersLink($servers, 'VIP') . "\n" . $Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
+    $VPNLinks = genGroupServersLink($servers, 'VPN', '⭐');
+    $MNGLinks = genGroupServersLink($servers, 'MNG', '🕊');
+    $VIPLinks = genGroupServersLink($servers, 'VIP', '💎') . "\n" . $Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
     $VPNLinks = $Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
+
+    file_put_contents(public_path('storage/MNG-links.sub'), $MNGLinks);
+    Storage::disk('google')->put('Subs/PanelSubs/MNG-links.sub', $MNGLinks, ['visibility' => "public"]);
 
     file_put_contents(public_path('storage/VIP-links.sub'), $VIPLinks);
     Storage::disk('google')->put('Subs/PanelSubs/VIP-links.sub', $VIPLinks, ['visibility' => "public"]);
@@ -175,7 +179,7 @@ function genMultiServersLink($servers)
     Storage::disk('google')->put('Subs/PanelSubs/VPN-links-64.sub', base64_encode($VPNLinks), ['visibility' => "public"]);
 }
 
-function genGroupServersLink($servers, $filter)
+function genGroupServersLink($servers, $filter, $icon)
 {
     $serversLinks = '';
     foreach ($servers as $sid => $server) {
@@ -197,13 +201,8 @@ function genGroupServersLink($servers, $filter)
             if ($inbound['enable']) {
 
                 foreach ($inbound['settings']['clients'] as $cid => $client) {
-                    if ($client['enable']) {
 
-                        if ($filter == "VPN" && str_contains($client['email'], "VIP")) {
-                            continue;
-                        } elseif ($filter == "VIP" && !str_contains($client['email'], "VIP")) {
-                            continue;
-                        }
+                    if ($client['enable'] && str_contains($client['email'], $filter)) {
 
 
                         //$clientLinks = $client['links'];
@@ -212,10 +211,8 @@ function genGroupServersLink($servers, $filter)
                             //$clientLinks = '';
                             foreach ($client['links'] as $clientLink) {
                                 $linkN += 1;
-                                if (str_contains($client['email'], "VIP")) {
-                                    $parts = explode('#', $clientLink);
-                                    $clientLink = $parts[0] . '#💎' . str_replace('⭐', '', $server->remark);
-                                }
+                                $parts = explode('#', $clientLink);
+                                $clientLink = $parts[0] . '#' . $icon . $server->remark;
                                 $inboundlinks .= $clientLink . "-" . $linkN . "\n";
                             }
                         }
