@@ -556,7 +556,7 @@ function genVlessLink($inbound, $client, $address, $remark)
 
                 //parse_str($url['query'], $q);
                 if($dest == 'speedtest.net' && $newSecurity = 'TLS'){
-                    $params['security'] = 'TLS';
+                    $params['security'] = 'tls';
 
                     $params['sni'] = 'speedtest.net';
                     $params['fp'] = 'firefox';
