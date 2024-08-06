@@ -545,6 +545,7 @@ function genVlessLink($inbound, $client, $address, $remark)
 
             foreach ($externalProxies as $index => $externalProxy) {
                 $newSecurity = $externalProxy['forceTls'];
+                
                 $dest = $externalProxy['dest'];
                 $port = (int) $externalProxy['port'];
                 $link = sprintf('vless://%s@%s:%d', $uuid, $dest, $port);
@@ -554,6 +555,9 @@ function genVlessLink($inbound, $client, $address, $remark)
                 $url = parse_url($link);
 
                 //parse_str($url['query'], $q);
+                if($dest == 'speedtest.net'){
+                    $params['sni'] = 'speedtest.net';
+                }
 
                 foreach ($params as $k => $v) {
                     if (!($newSecurity == 'none' && ($k == 'alpn' || $k == 'sni' || $k == 'fp' || $k == 'allowInsecure'))) {
