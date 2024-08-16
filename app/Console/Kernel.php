@@ -15,6 +15,8 @@ class Kernel extends ConsoleKernel
         
         // $schedule->command('inspire')->hourly();
         $schedule->call('updateServers')->everyThirtyMinutes();
+        // Schedule the RunDnsUpdate command to run every 30 minutes
+        $schedule->command('dns:update')->everyThirtyMinutes();
     }
 
     /**
