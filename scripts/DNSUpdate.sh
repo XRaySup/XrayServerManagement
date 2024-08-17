@@ -85,6 +85,12 @@ echo "$dns_records" | jq -c '.result[]' | while IFS= read -r record; do
     id=$(echo "$record" | jq -r '.id')
     proxied=$(echo "$record" | jq -r '.proxied')
 
+    # Skip records that have already been renamed with "deleted."
+    if [[ "$name" == deleted.* ]]; then
+        echo "Skipping already renamed record: $name"
+        continue
+    fi
+
     # Check if record name matches the subdomain pattern
     if [[ "$name" == *"$subdomain_pattern"* ]]; then
         echo "Processing record: Name='$name', Type='$type', Content='$content', Proxied=$proxied"
@@ -106,7 +112,7 @@ echo "$dns_records" | jq -c '.result[]' | while IFS= read -r record; do
                 action="No Change"
             fi
         else
-            # Rename the DNS record to "deleted.<subdomain_pattern>"
+            # Rename the DNS record to "deleted.<subdomain>"
             new_name="deleted.${name}"
             update_dns_record "$zone_id" "$id" "$api_token" "$new_name" "false" "$type" "$content"
             action="Renamed"
