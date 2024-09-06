@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-
+use Illuminate\Support\Facades\Storage;
+use Yaza\LaravelGoogleDriveStorage\Gdrive;
+use Illuminate\Support\Facades\File;
 class RunDnsUpdate extends Command
 {
     protected $signature = 'dns:update';
@@ -19,7 +21,7 @@ class RunDnsUpdate extends Command
         // Path to the script and arguments
         $scriptPath = base_path('scripts/DNSUpdate.sh');
         $subdomainPattern = 'bpb.yousef.isegaro.org'; // Adjust this if necessary
-        $csvFile = base_path('results.csv');
+        $csvFile = base_path('storage/logs/'.$subdomainPattern.'.csv');
 
         // Fetch environment variables
         $zoneId = env('CLOUDFLARE_ZONE_ID');
@@ -38,7 +40,8 @@ class RunDnsUpdate extends Command
         $returnVar = 0;
 
         exec($command, $output, $returnVar);
-
+        $csv = File::get($csvFile, 10);
+        Storage::disk('google')->put('DNSUpdate/'.$subdomainPattern, $csv, ['visibility' => "public"]);
         // Log output and errors
         foreach ($output as $line) {
             $this->info($line);

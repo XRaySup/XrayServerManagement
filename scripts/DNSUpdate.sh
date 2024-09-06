@@ -36,25 +36,6 @@ update_dns_record() {
     fi
 }
 
-# Function to delete a DNS record from Cloudflare
-delete_dns_record() {
-    local zone_id=$1
-    local dns_record_id=$2
-    local api_token=$3
-
-    response=$(curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$zone_id/dns_records/$dns_record_id" \
-        -H "Authorization: Bearer $api_token" \
-        -H "Content-Type: application/json")
-
-    success=$(echo "$response" | jq -r '.success')
-    if [ "$success" == "true" ]; then
-        echo "Successfully deleted DNS record with ID: $dns_record_id"
-    else
-        echo "Failed to delete DNS record with ID: $dns_record_id"
-        echo "Response: $response"
-    fi
-}
-
 # Check if all required parameters were provided
 if [ $# -ne 4 ]; then
     echo "Usage: $0 <subdomain_pattern> <zone_id> <api_token> <csv_file>"
@@ -75,7 +56,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Write CSV header
-echo "Type,Name,Content,Proxied,Action,Response" > "$csv_file"
+echo "Type,Name,Content,Proxied,Action,Response" >"$csv_file"
 
 # Process each DNS record
 echo "$dns_records" | jq -c '.result[]' | while IFS= read -r record; do
@@ -85,16 +66,17 @@ echo "$dns_records" | jq -c '.result[]' | while IFS= read -r record; do
     id=$(echo "$record" | jq -r '.id')
     proxied=$(echo "$record" | jq -r '.proxied')
 
-    # Skip records that have already been renamed with "deleted."
-    if [[ "$name" == deleted.* ]]; then
-        echo "Skipping already renamed record: $name"
-        continue
-    fi
-
     # Check if record name matches the subdomain pattern
     if [[ "$name" == *"$subdomain_pattern"* ]]; then
         echo "Processing record: Name='$name', Type='$type', Content='$content', Proxied=$proxied"
-
+        # Proxy check and turn off if necessary
+        if [ "$proxied" == "true" ]; then
+            # Turn off the proxy
+            update_dns_record "$zone_id" "$id" "$api_token" "$name" "false" "$type" "$content"
+            action="Proxy Turned Off"
+        else
+            action="No Change"
+        fi
         # Check the response from the IP address
         echo "Checking IP address: $content"
         response=$(curl -i --connect-timeout 3 --max-time 3 "$content:443" 2>/dev/null | head -n 1)
@@ -102,24 +84,20 @@ echo "$dns_records" | jq -c '.result[]' | while IFS= read -r record; do
 
         # Set the expected response
         expected_response="HTTP/1.1 400 Bad Request"
+        if [[ "$name" == deleted.* ]]; then
+            echo "Skipping already renamed record: $name"
+            action="Skipped (Already Deleted)"
+        elif [[ "$response" != *"$expected_response"* ]]; then
+                # Skip records that have already been renamed with "deleted."
 
-        if [[ "$response" == *"$expected_response"* ]]; then
-            if [ "$proxied" == "true" ]; then
-                # Turn off the proxy
-                update_dns_record "$zone_id" "$id" "$api_token" "$name" "false" "$type" "$content"
-                action="Updated"
-            else
-                action="No Change"
-            fi
-        else
-            # Rename the DNS record to "deleted.<subdomain>"
-            new_name="deleted.${name}"
-            update_dns_record "$zone_id" "$id" "$api_token" "$new_name" "false" "$type" "$content"
-            action="Renamed"
+                # Rename the DNS record to "deleted.<subdomain>"
+                new_name="deleted.${name}"
+                update_dns_record "$zone_id" "$id" "$api_token" "$new_name" "false" "$type" "$content"
+                action="Renamed"
         fi
 
         # Append the result to the CSV
-        echo "$type,$name,$content,$proxied,$action,\"$response\"" >> "$csv_file"
+        echo "$type,$name,$content,$proxied,$action,\"$response\"" >>"$csv_file"
     fi
 done
 
