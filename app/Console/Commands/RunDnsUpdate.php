@@ -20,7 +20,7 @@ class RunDnsUpdate extends Command
     {
         // Path to the script and arguments
         $scriptPath = base_path('scripts/DNSUpdate.sh');
-        $subdomainPattern = 'bpb.yousef.isegaro.org'; // Adjust this if necessary
+        $subdomainPattern = 'bpb.yousef.isegaro.com'; // Adjust this if necessary
         $csvFile = base_path('storage/logs/'.$subdomainPattern.'.csv');
 
         // Fetch environment variables
