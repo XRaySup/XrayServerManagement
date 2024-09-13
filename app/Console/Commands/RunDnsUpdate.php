@@ -12,120 +12,162 @@ class RunDnsUpdate extends Command
     protected $signature = 'dns:update';
     protected $description = 'Run the DNS update script';
 
+    // Store Cloudflare Zone ID and API Token as protected properties
+    protected $zoneId;
+    protected $apiToken;
+    protected $logFile;
+    protected $subdomainPattern;
+
     public function __construct()
     {
         parent::__construct();
+
+        // Fetch sensitive data from environment variables and store in class properties
+        $this->zoneId = env('CLOUDFLARE_ZONE_ID');
+        $this->apiToken = env('CLOUDFLARE_API_TOKEN');
+        $this->subdomainPattern = env('SUBDOMAIN_PATTERN');
+        $this->logFile = base_path('storage/logs/dns_update.log');
+
+        // Ensure the log file exists
+        $this->ensureLogExists($this->logFile);
+
+        // Check if the token or zone ID are missing
+        if (empty($this->zoneId) || empty($this->apiToken)) {
+            // Log and show the error
+            $this->logAndError('Cloudflare Zone ID or API Token is not set.');
+            exit(1); // Exit the command if required parameters are not available
+        }
     }
 
     public function handle()
     {
 
-        // Fetch environment variables
-        $zoneId = env('CLOUDFLARE_ZONE_ID');
-        $apiToken = env('CLOUDFLARE_API_TOKEN');
-        $subdomainPattern = env('SUBDOMAIN_PATTERN');; // Adjust this if necessary
-
         // Path to the CSV file and subdomain pattern
-        $csvFile = base_path('storage/logs/' . $subdomainPattern . '.csv');
+        $csvFile = base_path('storage/logs/' . $this->subdomainPattern . '.csv');
 
-        if (empty($zoneId) || empty($apiToken)) {
-            $this->error('Cloudflare Zone ID or API Token is not set.');
+        // Ensure the log file exists
+        $this->ensureLogExists($this->logFile);
+
+        if (empty($this->zoneId) || empty($this->apiToken)) {
+            $this->logAndError('Cloudflare Zone ID or API Token is not set.');
             return;
         }
+        $this->ensure_csv_exists($csvFile);
+        $csvData = $this->read_csv($csvFile);
+        $rows = $this->readCSVFromGoogleDrive('ip.csv');
+        $this->logAndInfo("Start on ip.csv.");
+        foreach ($rows as $row) {
+            $ip = $row[0];
+            if (!isset($csvData[$ip]) && $ip != '') {
+                $this->logAndInfo("IP: '$ip' is new!");
+                $this->addDNSRecord($ip);
+            } else {
+                $this->logAndError("IP: '$ip' is exists in CSV!");
+            }
+        }
+
+
 
         // Fetch DNS records from Cloudflare API
-        $dnsRecords = json_decode($this->get_all_dns_records($zoneId, $apiToken), true);
+        $dnsRecords = $this->get_all_dns_records();
 
         if ($dnsRecords === false) {
-            $this->error("Failed to get DNS records. Exiting.");
+            $this->logAndError("Failed to get DNS records. Exiting.");
             exit(1);
         }
 
-        $this->ensure_csv_exists($csvFile);
-        $csvData = $this->read_csv($csvFile);
 
-        $csvHandle = fopen($csvFile, 'w');
-        if ($csvHandle === false) {
-            $this->error("Failed to open CSV file for writing.");
-            return;
-        }
-
-        fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', 'Response', 'Unexpected Response Count']);
-
-        foreach ($dnsRecords['result'] as $record) {
+        foreach ($dnsRecords as $record) {
             $type = $record['type'];
             $name = $record['name'];
-            $content = $record['content'];
+            $ip = $record['content'];
             $id = $record['id'];
             $proxied = $record['proxied'] ? 'true' : 'false';
-
+            $this->logAndInfo("Processing record: Name='$name', IP='$ip', Proxied=$proxied");
             // Skip records that do not match the subdomain pattern
-            if (strpos($name, $subdomainPattern) === false) {
-                $this->info("Skipping record: Name='$name' does not match the pattern.");
+            if (strpos($name, $this->subdomainPattern) === false) {
+                $this->logAndInfo("Skipping record: Name='$name' does not match the pattern.");
                 continue;
             }
-            $key = $content; // Use IP address as the unique key
+
+            // Check if proxy is turned off
+            if ($proxied==='true') {
+                $this->logAndInfo("Proxy is currently on for record: Name='$name', IP='$ip'. Turning it off...");
+
+                // Update DNS record to turn on the proxy
+                $this->update_dns_record( $id, $name, $ip);
+                $this->logAndInfo("Proxy has been turned on for record: Name='$name', IP='$ip'.");
+            }
 
             // Initialize response count for the record if not already set
-            if (!isset($csvData[$key])) {
-                $csvData[$key] = [
+            if (!isset($csvData[$ip])) {
+                $this->logAndInfo("IP='$ip' is not not in the .csv file. We add it to the list");
+                $csvData[$ip] = [
                     'type' => $type,
                     'name' => $name,
-                    'content' => $content,
-                    'proxied' => $proxied,
+                    'content' => $ip,
+                    'proxied' => false,
                     'action' => 'No Change',
                     'response' => '',
                     'response_count' => 0
                 ];
             }
 
-            $this->info("Processing record: Name='$name', Content='$content', Proxied=$proxied");
+
 
             // Check the response from the IP address
-            $this->info("Checking IP address: $content");
-            $response = $this->check_ip_response($content);
-            $this->info("Response: $response");
+            $this->logAndInfo("Checking IP address: '$ip'");
+            $response = $this->check_ip_response($ip);
+            $this->logAndInfo("Response: '$response'");
             // Set the expected response
             $expectedResponse = 'HTTP/1.1 400';
 
             // Check and update unexpected response count
             if (strpos($response, $expectedResponse) === false) {
                 // Increment the unexpected response count
-                $this->info("Expected: False");
-                $csvData[$key]['response_count']++;
+                $this->logAndInfo("Expected: False");
+                $csvData[$ip]['response_count']++;
 
                 // If the count reaches 5, delete the record
-                if ($csvData[$key]['response_count'] >= 5) {
-                    $this->delete_dns_record($zoneId, $id, $apiToken);
+                if ($csvData[$ip]['response_count'] >= 5) {
+                    $this->logAndError("more than 5 times failed respond.");
+                    $this->delete_dns_record($id);
+                    $this->logAndInfo("Record Removed: Name='$name', IP='$ip'.");
                     $name = '-';
-                    $csvData[$key]['action'] = 'Removed';
+                    $csvData[$ip]['action'] = 'Removed';
                 } else {
                     // Rename the DNS record if it is not already renamed
                     if (strpos($name, 'deleted.') === false) {
                         $name = 'deleted.' . $name;
-                        $this->update_dns_record($zoneId, $id, $apiToken, $name, $proxied, $type, $content);
-                        $csvData[$key]['action'] = 'Renamed';
+                        $this->update_dns_record($id, $name, $ip);
+                        $csvData[$ip]['action'] = 'Renamed';
                     }
                 }
             } else {
-                $this->info("Expected: True");
+                $this->logAndInfo("Expected: True");
                 // Response is as expected, rename the DNS record back to normal
                 if (strpos($name, 'deleted.') === 0) {
                     $name = str_replace('deleted.', '', $name);
-                    $this->update_dns_record($zoneId, $id, $apiToken, $name, $proxied, $type, $content);
-                    $csvData[$key]['action'] = 'Restored';
+                    $this->update_dns_record($id, $name, $ip);
+                    $csvData[$ip]['action'] = 'Restored';
                 }
             }
 
             // Update the CSV data for this record
-            $csvData[$key]['type'] = $type;
-            $csvData[$key]['name'] = $name;
-            $csvData[$key]['content'] = $content;
-            $csvData[$key]['proxied'] = $proxied;
-            $csvData[$key]['response'] = $response;
+            $csvData[$ip]['type'] = $type;
+            $csvData[$ip]['name'] = $name;
+            $csvData[$ip]['content'] = $ip;
+            $csvData[$ip]['proxied'] = $proxied;
+            $csvData[$ip]['response'] = $response;
         }
 
         // Write updated CSV data
+        $csvHandle = fopen($csvFile, 'w');
+        if ($csvHandle === false) {
+            $this->logAndError("Failed to open CSV file for writing.");
+            return;
+        }
+        fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', 'Response', 'Unexpected Response Count']);
         foreach ($csvData as $data) {
             fputcsv($csvHandle, [
                 $data['type'],
@@ -142,41 +184,76 @@ class RunDnsUpdate extends Command
 
         // Upload CSV to Google Drive
         $csvContent = File::get($csvFile);
-        Storage::disk('google')->put('DNSUpdate/' . $subdomainPattern, $csvContent, ['visibility' => 'public']);
+        Storage::disk('google')->put('DNSUpdate/' . $this->subdomainPattern, $csvContent, ['visibility' => 'public']);
 
-        $this->info("Results have been written to $csvFile and uploaded to Google Drive.");
+        $this->logAndInfo("Results have been written to $csvFile and uploaded to Google Drive.");
+
+        // Upload log to Google Drive
+        $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
+        $this->logAndInfo("Log file has been uploaded to Google Drive.");
     }
 
-    private function get_all_dns_records($zone_id, $api_token)
+    private function get_all_dns_records()
     {
-        $url = "https://api.cloudflare.com/client/v4/zones/$zone_id/dns_records";
+        $url = "https://api.cloudflare.com/client/v4/zones/$this->zoneId/dns_records";
 
         $curl = curl_init($url);
 
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $api_token",
+            "Authorization: Bearer $this->apiToken",
             "Content-Type: application/json"
         ]);
 
         $response = curl_exec($curl);
 
         if (curl_errno($curl)) {
-            $this->error('Error: ' . curl_error($curl));
+            $this->logAndError('Error: ' . curl_error($curl));
+            curl_close($curl);
+            return null;
         }
 
         curl_close($curl);
 
-        return $response;
-    }
-    private function update_dns_record($zoneId, $recordId, $apiToken, $name, $proxied, $type, $content)
-    {
-        $url = "https://api.cloudflare.com/client/v4/zones/$zoneId/dns_records/$recordId";
+        // Decode JSON response into an array
+        $responseArray = json_decode($response, true);
 
+        // Check if the request was successful
+        if (!$responseArray['success']) {
+            $this->logAndError('Error fetching DNS records: ' . $responseArray['errors'][0]['message']);
+            return null;
+        }
+
+        // Return the list of DNS records
+        return $responseArray['result'];
+    }
+    private function getExistingDNSRecord($ip)
+    {
+        // Get all DNS records for the zone
+        $dnsRecords = $this->get_all_dns_records();
+
+        if (!$dnsRecords) {
+            return null; // If we couldn't retrieve the DNS records, return null
+        }
+
+        // Loop through the records to find a match
+        foreach ($dnsRecords as $record) {
+            if ($record['content'] === $ip) {
+                // A record with the same name and content already exists
+                return $record;
+            }
+        }
+
+        return null;
+    }
+    private function update_dns_record($recordId, $name, $ip)
+    {
+        $url = "https://api.cloudflare.com/client/v4/zones/$this->zoneId/dns_records/$recordId";
+        $proxied = 'false';
         $data = [
-            'type'    => $type,
+            'type'    => 'A',
             'name'    => $name,
-            'content' => $content,
+            'content' => $ip,
             'proxied' => ($proxied === 'true') ? true : false,
         ];
 
@@ -185,14 +262,33 @@ class RunDnsUpdate extends Command
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $apiToken",
+            "Authorization: Bearer $this->apiToken",
             "Content-Type: application/json"
         ]);
 
         $response = curl_exec($curl);
         curl_close($curl);
+        // Decode the JSON response
+        $responseArray = json_decode($response, true);
 
-        return $response;
+        // Check if the request was successful
+        if (!$responseArray['success']) {
+            // Extract the error code and message
+            $errorCode = $responseArray['errors'][0]['code'] ?? 'Unknown Code';
+            $errorMessage = $responseArray['errors'][0]['message'] ?? 'Unknown Error';
+            $this->logAndError($errorMessage . ' code: ' . $errorCode);
+            if ($errorCode === 81058) {
+                $this->delete_dns_record($recordId);
+                $this->update_dns_record($recordId, $name,  $ip);
+            }
+            return [
+                'success' => false,
+                'error_code' => $errorCode,
+                'error_message' => $errorMessage,
+            ];
+        }
+        $this->logAndInfo($response);
+        return ['success' => true, 'result' => $responseArray['result']];
     }
     private function check_ip_response($ipAddress)
     {
@@ -214,22 +310,22 @@ class RunDnsUpdate extends Command
 
         return $response ? "HTTP/1.1 $response" : "No Response";
     }
-    private function delete_dns_record($zoneId, $recordId, $apiToken)
+    private function delete_dns_record($recordId)
     {
-        $url = "https://api.cloudflare.com/client/v4/zones/$zoneId/dns_records/$recordId";
+        $url = "https://api.cloudflare.com/client/v4/zones/$this->zoneId/dns_records/$recordId";
 
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
         curl_setopt($curl, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer $apiToken",
+            "Authorization: Bearer $this->apiToken",
             "Content-Type: application/json"
         ]);
 
         $response = curl_exec($curl);
 
         if (curl_errno($curl)) {
-            $this->error('Error: ' . curl_error($curl));
+            $this->logAndError('Error: ' . curl_error($curl));
             curl_close($curl);
             return false;
         }
@@ -244,7 +340,7 @@ class RunDnsUpdate extends Command
         if (!File::exists($csvFile)) {
             $csvHandle = fopen($csvFile, 'w');
             if ($csvHandle === false) {
-                $this->error("Failed to create CSV file.");
+                $this->logAndError("Failed to create CSV file.");
                 exit(1);
             }
 
@@ -277,5 +373,119 @@ class RunDnsUpdate extends Command
             fclose($csvHandle);
         }
         return $csvData;
+    }
+    private function readCSVFromGoogleDrive($filename)
+    {
+        $file = Storage::disk('google')->get('DNSUpdate/' . $filename);
+        $rows = array_map('str_getcsv', explode("\n", $file));
+
+        // Remove header
+        array_shift($rows);
+
+        return $rows;
+    }
+    private function addDNSRecord($ip)
+    {
+
+        // First, check for existing DNS records
+        $existingRecord = $this->getExistingDNSRecord($ip);
+
+        if ($existingRecord) {
+            // Extract the 'name' from the existing record
+            $existingRecordName = $existingRecord['name'];
+            // Stop adding the record if it already exists
+            $this->logAndError("A DNS record with IP $ip already exists for $existingRecordName.");
+            return [
+                'success' => false,
+                'message' => "DNS record already exists.",
+            ];
+        }
+
+        $url = "https://api.cloudflare.com/client/v4/zones/$this->zoneId/dns_records";
+
+        // Prepare the data to be sent in the request
+        $data = [
+            'type' => 'A',
+            'name' => $this->subdomainPattern,
+            'content' => $ip,
+            'ttl' => 1,
+            'proxied' => False,
+        ];
+
+        // Initialize cURL
+        $ch = curl_init($url);
+
+        // Set cURL options
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer $this->apiToken",
+            'Content-Type: application/json',
+        ]);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
+        // Execute the cURL request and capture the response
+        $response = curl_exec($ch);
+
+        // Check for errors
+        if ($response === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return ['error' => $error];
+        }
+
+        // Close the cURL session
+        curl_close($ch);
+
+        // Decode the JSON response
+        $responseArray = json_decode($response, true);
+
+        // Check if the request was successful
+        if (!$responseArray['success']) {
+            // Extract the error code and message
+            $errorCode = $responseArray['errors'][0]['code'] ?? 'Unknown Code';
+            $errorMessage = $responseArray['errors'][0]['message'] ?? 'Unknown Error';
+            $this->logAndError($errorMessage);
+            return [
+                'success' => false,
+                'error_code' => $errorCode,
+                'error_message' => $errorMessage,
+            ];
+        }
+
+        $this->logAndInfo('Record Added Successfully');
+        return ['success' => true, 'result' => $responseArray['result']];
+    }
+    private function logAndInfo($message)
+    {
+        // Log message to terminal and log file
+        $this->info($message);
+        $this->logToFile($this->logFile, $message);
+    }
+
+    private function logAndError($message)
+    {
+        $this->error($message); // Display the error in the terminal
+        $this->logToFile($this->logFile, "[ERROR] " . $message); // Log it to the file
+    }
+
+    private function ensureLogExists($logFile)
+    {
+        if (!File::exists($logFile)) {
+            File::put($logFile, "DNS Update Log\n");
+        }
+    }
+
+    private function logToFile($logFile, $message)
+    {
+        $timestamp = date('Y-m-d H:i:s');
+        $logMessage = "[$timestamp] $message\n";
+        File::append($logFile, $logMessage);
+    }
+
+    private function uploadLogToGoogleDrive($localFilePath, $remoteFilePath)
+    {
+        $fileContent = File::get($localFilePath);
+        Storage::disk('google')->put($remoteFilePath, $fileContent, ['visibility' => 'public']);
     }
 }
