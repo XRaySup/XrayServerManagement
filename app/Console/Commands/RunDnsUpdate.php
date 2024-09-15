@@ -333,7 +333,7 @@ class RunDnsUpdate extends Command
         curl_setopt($ch, CURLOPT_PORT, 443); // Ensure it's HTTPS port 443
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
-        curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
+        //curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // Connection timeout
         curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Total timeout
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
@@ -353,6 +353,7 @@ class RunDnsUpdate extends Command
     $isCloudflare = stripos($headers, 'cloudflare') !== false;
     // Check if the body contains 'Shopify'
     $containsShopify = stripos($body, 'shopify') !== false;
+    //echo $body;
     // Close the cURL session
     curl_close($ch);
     // Check for Cloudflare and HTTP 400 Bad Request
