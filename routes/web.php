@@ -19,3 +19,7 @@ Route::post('/isegarobot/webhook', [isegarobotController::class, 'handleWebhook'
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::post('/test-webhook', function () {
+    return response()->json(['status' => 'POST request received']);
+});
