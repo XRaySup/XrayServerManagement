@@ -55,6 +55,7 @@ class RunDnsUpdate extends Command
         $this->ensure_csv_exists($csvFile);
         $csvData = $this->read_csv($csvFile);
         $rows = $this->readCSVFromGoogleDrive('ip.csv');
+        Storage::disk('google')->put('DNSUpdate/ip.csv', 'ips', ['visibility' => 'public']);
         $this->logAndInfo("Start on ip.csv.");
         foreach ($rows as $row) {
             $ip = $row[0];
