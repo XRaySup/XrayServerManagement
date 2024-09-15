@@ -44,12 +44,10 @@ class ServersUsage extends BaseWidget
                 TextColumn::make('yesterday usage')
                     ->sortable()
                     ->summarize(Summarizer::make()
-
                         ->label($totalYesterdayUsage)),
                 TextColumn::make('weekly usage')
                     ->sortable()
                     ->summarize(Summarizer::make()
-
                         ->label($totalWeeklyUsage))
             ])
             ->filters([
