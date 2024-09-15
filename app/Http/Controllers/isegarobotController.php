@@ -75,18 +75,18 @@ class isegarobotController extends Controller
 
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                $ipresponse = $this->check_ip_response($ip);
+                // $ipresponse = $this->check_ip_response($ip);
                 
-                // Set the expected response
-                $expectedResponse = 'HTTP/1.1 400';
+                // // Set the expected response
+                // $expectedResponse = 'HTTP/1.1 400';
 
-                // Check and update unexpected response count
-                if (strpos($ipresponse, $expectedResponse) === false) {
-                    $this->sendMessage($chatId, "ip '$ip' : Wrong response.");
-                } else {
-                    $validIps[] = $ip;
-                    $this->sendMessage($chatId, "ip '$ip' : Expected response.");
-                }
+                // // Check and update unexpected response count
+                // if (strpos($ipresponse, $expectedResponse) === false) {
+                //     $this->sendMessage($chatId, "ip '$ip' : Wrong response.");
+                // } else {
+                //     $validIps[] = $ip;
+                //     $this->sendMessage($chatId, "ip '$ip' : Expected response.");
+                // }
             }
         }
         // Save valid IPs to Google Drive
