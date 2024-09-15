@@ -60,7 +60,17 @@ class RunDnsUpdate extends Command
             $ip = $row[0];
             if (!isset($csvData[$ip]) && $ip != '') {
                 $this->logAndInfo("IP: '$ip' is new!");
-                $this->addDNSRecord($ip);
+                // Check the response from the IP address
+                $this->logAndInfo("Checking IP address: '$ip'");
+                $response = $this->check_ip_response($ip);
+                $this->logAndInfo("Response: '$response'");
+                // Set the expected response
+                $expectedResponse = 'HTTP/1.1 400';
+
+                // Check and update unexpected response count
+                if (strpos($response, $expectedResponse) === true) {
+                    $this->addDNSRecord($ip);
+                }
             } else {
                 $this->logAndError("IP: '$ip' is exists in CSV!");
             }
@@ -91,11 +101,11 @@ class RunDnsUpdate extends Command
             }
 
             // Check if proxy is turned off
-            if ($proxied==='true') {
+            if ($proxied === 'true') {
                 $this->logAndInfo("Proxy is currently on for record: Name='$name', IP='$ip'. Turning it off...");
 
                 // Update DNS record to turn on the proxy
-                $this->update_dns_record( $id, $name, $ip);
+                $this->update_dns_record($id, $name, $ip);
                 $this->logAndInfo("Proxy has been turned on for record: Name='$name', IP='$ip'.");
             }
 
