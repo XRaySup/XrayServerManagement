@@ -348,14 +348,24 @@ class RunDnsUpdate extends Command
     // Get the headers from the response
     $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     $headers = substr($response, 0, $headerSize);
-
+    $body = substr($response, $headerSize);
+    // Check if 'Cloudflare' is in the headers
+    $isCloudflare = stripos($headers, 'cloudflare') !== false;
+    // Check if the body contains 'Shopify'
+    $containsShopify = stripos($body, 'shopify') !== false;
+    // Close the cURL session
+    curl_close($ch);
     // Check for Cloudflare and HTTP 400 Bad Request
-    if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
+    if ($httpCode == 400 && $isCloudflare !== false) {
         $response = 'Cloudflare server detected with 400 Bad Request';
         echo $response . "\n";
+
         curl_close($ch);
         return true;
     } else {
+        if($containsShopify){
+            $this->logAndError('shopify');
+            }
         $response = 'Not a Cloudflare server or not 400 Bad Request';
         echo $response . "\n";
         curl_close($ch);

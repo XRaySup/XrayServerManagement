@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\ProcessIpsJob;
+
 class isegarobotController extends Controller
 {
     private $telegram;
@@ -34,8 +35,8 @@ class isegarobotController extends Controller
                 $this->sendMessage($chatId, "File Received.");
 
                 $fileContents = Http::get($fileUrl)->body();
-            // Dispatch job for processing
-                            // Process file contents
+                // Dispatch job for processing
+                // Process file contents
                 ProcessIpsJob::dispatch($fileContents, $chatId);
 
                 //$this->processFileContents($fileContents, $chatId);
@@ -56,7 +57,7 @@ class isegarobotController extends Controller
 
         return response()->json(['status' => 'ok']);
     }
-    
+
     private function readCSVFromGoogleDrive($filename)
     {
         $file = Storage::disk('google')->get('DNSUpdate/' . $filename);
@@ -79,7 +80,7 @@ class isegarobotController extends Controller
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 $ipresponse = $this->check_ip_response($ip);
-                
+
                 // Set the expected response
                 //$expectedResponse = 'HTTP/1.1 400';
 
@@ -97,21 +98,21 @@ class isegarobotController extends Controller
             $this->saveIpsToGoogleDrive($validIps);
         }
     }
-        // Function to write the CSV file
-        private function writeCSVToGoogleDrive($filename, $data)
-        {
-            // Convert the data to CSV format
-            $handle = fopen('php://temp', 'r+');
-            foreach ($data as $row) {
-                fputcsv($handle, $row);
-            }
-            rewind($handle);
-            $csvContent = stream_get_contents($handle);
-            fclose($handle);
-    
-            // Write the updated content back to Google Drive
-            Storage::disk('google')->put('DNSUpdate/' . $filename, $csvContent);
+    // Function to write the CSV file
+    private function writeCSVToGoogleDrive($filename, $data)
+    {
+        // Convert the data to CSV format
+        $handle = fopen('php://temp', 'r+');
+        foreach ($data as $row) {
+            fputcsv($handle, $row);
         }
+        rewind($handle);
+        $csvContent = stream_get_contents($handle);
+        fclose($handle);
+
+        // Write the updated content back to Google Drive
+        Storage::disk('google')->put('DNSUpdate/' . $filename, $csvContent);
+    }
     private function saveIpsToGoogleDrive(array $ips)
     {
         $rows = $this->readCSVFromGoogleDrive('ip.csv');
@@ -136,32 +137,37 @@ class isegarobotController extends Controller
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // Connection timeout
         curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Total timeout
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
-        
+
         // Execute the cURL request
         $response = curl_exec($ch);
-
         // Handle cURL errors
-    // Get the HTTP status code
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            echo $error;
+            echo "IP did not respond or error occurred.\n";
+            curl_close($ch);
+            return false;
+        }
+        // Handle cURL errors
+        // Get the HTTP status code
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-    // Get the headers from the response
-    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-    $headers = substr($response, 0, $headerSize);
+        // Get the headers from the response
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $headers = substr($response, 0, $headerSize);
 
-    // Check for Cloudflare and HTTP 400 Bad Request
-    if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
-        $response = 'Cloudflare server detected with 400 Bad Request';
-        echo $response . "\n";
-        curl_close($ch);
-        return true;
-    } else {
-        $response = 'Not a Cloudflare server or not 400 Bad Request';
-        echo $response . "\n";
-        curl_close($ch);
-        return false;
-    }
-        
-
+        // Check for Cloudflare and HTTP 400 Bad Request
+        if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
+            $response = 'Cloudflare server detected with 400 Bad Request';
+            echo $response . "\n";
+            curl_close($ch);
+            return true;
+        } else {
+            $response = 'Not a Cloudflare server or not 400 Bad Request';
+            echo $response . "\n";
+            curl_close($ch);
+            return false;
+        }
     }
     private function sendMessage($chatId, $text)
     {
