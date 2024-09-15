@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Telegram\Bot\Api;
-use Telegram\Bot\Exceptions\TelegramSDKException;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class isegarobotController extends Controller
 {
@@ -20,38 +20,63 @@ class isegarobotController extends Controller
     {
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
-
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
 
-            try {
-                $file = $this->telegram->getFile(['file_id' => $fileId]);
-                $filePath = $file->getFilePath();
-                $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
+            // Get file path from Telegram API
+            $fileData = $this->telegram->getFile(['file_id' => $fileId]);
 
-                // Download the file
-                $fileContents = file_get_contents($fileUrl);
-                $fileName = basename($filePath);
-                Storage::put("telegram_files/{$fileName}", $fileContents);
+            if (isset($fileData['result']['file_path'])) {
+                $this->sendMessage($chatId, "File Received.");
+                $filePath = $fileData['result']['file_path'];
+                $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/{$filePath}";
 
-                // Send a confirmation message
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => "File received: {$fileName}"
-                ]);
-            } catch (TelegramSDKException $e) {
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => "Error: {$e->getMessage()}"
-                ]);
+                // Fetch the file contents
+                $fileContents = Http::get($fileUrl)->body();
+
+                // Process file contents
+                $this->processFileContents($fileContents,$chatId);
+                
+                // Optionally, send a confirmation message to the user
+                
+                $this->sendMessage($chatId, "File processed successfully.");
             }
         } else {
-            $this->telegram->sendMessage([
-                'chat_id' => $chatId,
-                'text' => "No file received."
-            ]);
+
+            $this->sendMessage($chatId, "No file received.");
         }
 
         return response()->json(['status' => 'ok']);
     }
+
+    private function processFileContents($contents,$chatId)
+    {
+        // Split contents into lines
+        $lines = explode("\n", trim($contents));
+
+        foreach ($lines as $line) {
+            $ip = trim($line);
+
+            // Validate the IP address
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                $this->sendMessage($chatId, "ip: $ip");
+                // Do something with the valid IP address
+                // Example: Log the valid IP or perform some action
+                // Log::info("Valid IP address: " . $ip);
+                // Your custom logic here
+            } else {
+                // Handle invalid IP addresses if needed
+                // Log::warning("Invalid IP address: " . $ip);
+            }
+        }
+    }
+
+    private function sendMessage($chatId, $text)
+    {
+        $this->telegram->sendMessage([
+            'chat_id' => $chatId,
+            'text' => $text,
+        ]);
+    }
 }
+
