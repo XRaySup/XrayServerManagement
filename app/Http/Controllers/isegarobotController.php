@@ -3,58 +3,55 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Telegram\Bot\Api;
+use Telegram\Bot\Exceptions\TelegramSDKException;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Http;
 
 class isegarobotController extends Controller
 {
-    private $telegramApiUrl = 'https://api.telegram.org/file/bot';
+    private $telegram;
 
+    public function __construct()
+    {
+        $this->telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+    }
 
     public function handleWebhook(Request $request)
     {
-        
-        $botToken = env('TELEGRAM_BOT_TOKEN'); // Get bot token from .env
         $message = $request->input('message');
-        
-        if (isset($message['audio'])) {
-            $fileId = $message['audio']['file_id'];
-            $chatId = $message['chat']['id'];
-    
-            // Get file path from Telegram API using Laravel's Http
-            $response = Http::get("https://api.telegram.org/bot{$botToken}/getFile", [
-                'file_id' => $fileId,
-            ]);
-    
-            $fileData = $response->json();
-    
-            if (isset($fileData['result']['file_path'])) {
-                $fileUrl = "{$this->telegramApiUrl}{$botToken}/{$fileData['result']['file_path']}";
-    
-                // Download the file and store it locally or process it
-                $fileContents = Http::get($fileUrl)->body();
-                $fileName = basename($fileData['result']['file_path']);
-                
+        $chatId = $message['chat']['id'];
+
+        if (isset($message['document'])) {
+            $fileId = $message['document']['file_id'];
+
+            try {
+                $file = $this->telegram->getFile(['file_id' => $fileId]);
+                $filePath = $file->getFilePath();
+                $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
+
+                // Download the file
+                $fileContents = file_get_contents($fileUrl);
+                $fileName = basename($filePath);
                 Storage::put("telegram_files/{$fileName}", $fileContents);
-    
-                // Optionally, send a confirmation message to the user
-                $this->sendMessage($chatId, "Audio file received: {$fileName}");
+
+                // Send a confirmation message
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => "File received: {$fileName}"
+                ]);
+            } catch (TelegramSDKException $e) {
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => "Error: {$e->getMessage()}"
+                ]);
             }
         } else {
-            // Handle other types of messages or send an error message
-            $chatId = $message['chat']['id'];
-            $this->sendMessage($chatId, "No audio file received.");
+            $this->telegram->sendMessage([
+                'chat_id' => $chatId,
+                'text' => "No file received."
+            ]);
         }
-    
-        return response()->json(['status' => 'ok']);
-    }
 
-    private function sendMessage($chatId, $text)
-    {
-        $botToken = env('TELEGRAM_BOT_TOKEN'); // Get bot token from .env
-        Http::post("https://api.telegram.org/bot{$botToken}/sendMessage", [
-            'chat_id' => $chatId,
-            'text' => $text,
-        ]);
+        return response()->json(['status' => 'ok']);
     }
 }
