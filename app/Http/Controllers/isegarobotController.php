@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
+use Telegram\Bot\Exceptions\TelegramSDKException;
+
 
 class isegarobotController extends Controller
 {
@@ -23,15 +24,15 @@ class isegarobotController extends Controller
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
 
-            // Get file path from Telegram API
-            $fileData = $this->telegram->getFile(['file_id' => $fileId]);
-            $this->sendMessage($chatId, "File check.");
-            if (isset($fileData['result']['file_path'])) {
-                $this->sendMessage($chatId, "File Received.");
-                $filePath = $fileData['result']['file_path'];
-                $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/{$filePath}";
+            try {
+                $file = $this->telegram->getFile(['file_id' => $fileId]);
+                $filePath = $file->getFilePath();
+                $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
 
-                // Fetch the file contents
+                // Download the file
+                $fileContents = file_get_contents($fileUrl);
+                $this->sendMessage($chatId, "File Received.");
+
                 $fileContents = Http::get($fileUrl)->body();
 
                 // Process file contents
@@ -40,7 +41,13 @@ class isegarobotController extends Controller
                 // Optionally, send a confirmation message to the user
                 
                 $this->sendMessage($chatId, "File processed successfully.");
+            } catch (TelegramSDKException $e) {
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => "Error: {$e->getMessage()}"
+                ]);
             }
+            
         } else {
 
             $this->sendMessage($chatId, "No file received.");
