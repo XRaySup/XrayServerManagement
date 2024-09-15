@@ -76,7 +76,7 @@ class isegarobotController extends Controller
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 $ipresponse = $this->check_ip_response($ip);
-                $this->sendMessage($chatId, "ip '$ip' : $ipresponse");
+                
                 // Set the expected response
                 $expectedResponse = 'HTTP/1.1 400';
 
