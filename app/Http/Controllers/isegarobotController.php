@@ -7,7 +7,7 @@ use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Http;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Illuminate\Support\Facades\Storage;
-
+use App\Jobs\ProcessIpsJob;
 class isegarobotController extends Controller
 {
     private $telegram;
@@ -34,9 +34,11 @@ class isegarobotController extends Controller
                 $this->sendMessage($chatId, "File Received.");
 
                 $fileContents = Http::get($fileUrl)->body();
+            // Dispatch job for processing
+                            // Process file contents
+                ProcessIpsJob::dispatch($fileContents, $chatId);
 
-                // Process file contents
-                $this->processFileContents($fileContents, $chatId);
+                //$this->processFileContents($fileContents, $chatId);
 
                 // Optionally, send a confirmation message to the user
 
@@ -54,6 +56,7 @@ class isegarobotController extends Controller
 
         return response()->json(['status' => 'ok']);
     }
+    
     private function readCSVFromGoogleDrive($filename)
     {
         $file = Storage::disk('google')->get('DNSUpdate/' . $filename);
@@ -64,7 +67,7 @@ class isegarobotController extends Controller
 
         return $rows;
     }
-    private function processFileContents($contents, $chatId)
+    public function processFileContents($contents, $chatId)
     {
         // Split contents into lines
         $lines = explode("\n", trim($contents));
@@ -75,18 +78,18 @@ class isegarobotController extends Controller
 
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                // $ipresponse = $this->check_ip_response($ip);
+                $ipresponse = $this->check_ip_response($ip);
                 
-                // // Set the expected response
-                // $expectedResponse = 'HTTP/1.1 400';
+                // Set the expected response
+                $expectedResponse = 'HTTP/1.1 400';
 
-                // // Check and update unexpected response count
-                // if (strpos($ipresponse, $expectedResponse) === false) {
-                //     $this->sendMessage($chatId, "ip '$ip' : Wrong response.");
-                // } else {
-                //     $validIps[] = $ip;
-                //     $this->sendMessage($chatId, "ip '$ip' : Expected response.");
-                // }
+                // Check and update unexpected response count
+                if (strpos($ipresponse, $expectedResponse) === false) {
+                    $this->sendMessage($chatId, "ip '$ip' : Wrong response.");
+                } else {
+                    $validIps[] = $ip;
+                    $this->sendMessage($chatId, "ip '$ip' : Expected response.");
+                }
             }
         }
         // Save valid IPs to Google Drive
