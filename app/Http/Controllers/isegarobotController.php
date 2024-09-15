@@ -81,10 +81,10 @@ class isegarobotController extends Controller
                 $ipresponse = $this->check_ip_response($ip);
                 
                 // Set the expected response
-                $expectedResponse = 'HTTP/1.1 400';
+                //$expectedResponse = 'HTTP/1.1 400';
 
                 // Check and update unexpected response count
-                if (strpos($ipresponse, $expectedResponse) === false) {
+                if ($ipresponse === false) {
                     $this->sendMessage($chatId, "ip '$ip' : Wrong response.");
                 } else {
                     $validIps[] = $ip;
@@ -126,22 +126,42 @@ class isegarobotController extends Controller
     private function check_ip_response($ipAddress)
     {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "$ipAddress:443");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
 
+        // Set the IP address with port 443
+        curl_setopt($ch, CURLOPT_URL, "http://$ipAddress");
+        curl_setopt($ch, CURLOPT_PORT, 443); // Ensure it's HTTPS port 443
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
+        curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // Connection timeout
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Total timeout
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
+        
+        // Execute the cURL request
         $response = curl_exec($ch);
 
-        if (curl_errno($ch)) {
-            $response = curl_error($ch);
-        } else {
-            $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        }
+        // Handle cURL errors
+    // Get the HTTP status code
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
+    // Get the headers from the response
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $headers = substr($response, 0, $headerSize);
+
+    // Check for Cloudflare and HTTP 400 Bad Request
+    if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
+        $response = 'Cloudflare server detected with 400 Bad Request';
+        echo $response . "\n";
         curl_close($ch);
+        return true;
+    } else {
+        $response = 'Not a Cloudflare server or not 400 Bad Request';
+        echo $response . "\n";
+        curl_close($ch);
+        return false;
+    }
+        
 
-        return $response ? "HTTP/1.1 $response" : "No Response";
     }
     private function sendMessage($chatId, $text)
     {

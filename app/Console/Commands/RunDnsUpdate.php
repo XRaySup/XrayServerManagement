@@ -62,18 +62,18 @@ class RunDnsUpdate extends Command
             if (!isset($csvData[$ip]) && $ip != '') {
                 $this->logAndInfo("IP: '$ip' is new!");
                 // Check the response from the IP address
-                $this->logAndInfo("Checking IP address: '$ip'");
+                //$this->logAndInfo("Checking IP address: '$ip'");
                 $response = $this->check_ip_response($ip);
-                $this->logAndInfo("Response: '$response'");
+                $this->logAndInfo("'$ip' Expected Response: '$response'");
                 // Set the expected response
-                $expectedResponse = 'HTTP/1.1 400';
+                //$expectedResponse = 'HTTP/1.1 400';
 
                 // Check and update unexpected response count
-                if (strpos($response, $expectedResponse) === true) {
+                if ($response === true) {
                     $this->addDNSRecord($ip);
                 }
             } else {
-                $this->logAndError("IP: '$ip' is exists in CSV!");
+                $this->logAndError("IP: '$ip' exists in CSV!");
             }
         }
 
@@ -129,14 +129,17 @@ class RunDnsUpdate extends Command
             // Check the response from the IP address
             $this->logAndInfo("Checking IP address: '$ip'");
             $response = $this->check_ip_response($ip);
-            $this->logAndInfo("Response: '$response'");
+            //$response2 = $this->check_ip_response2($ip);
+
+            $this->logAndInfo("Expected Response: '$response'");
+            //$this->logAndInfo("Response: '$response2'");
             // Set the expected response
-            $expectedResponse = 'HTTP/1.1 400';
+            //$expectedResponse = 'HTTP/1.1 400';
 
             // Check and update unexpected response count
-            if (strpos($response, $expectedResponse) === false) {
+            if ($response === false) {
                 // Increment the unexpected response count
-                $this->logAndInfo("Expected: False");
+                //$this->logAndInfo("Expected: False");
                 $csvData[$ip]['response_count']++;
 
                 // If the count reaches 5, delete the record
@@ -155,7 +158,7 @@ class RunDnsUpdate extends Command
                     }
                 }
             } else {
-                $this->logAndInfo("Expected: True");
+                //$this->logAndInfo("Expected: True");
                 // Response is as expected, rename the DNS record back to normal
                 if (strpos($name, 'deleted.') === 0) {
                     $name = str_replace('deleted.', '', $name);
@@ -301,26 +304,67 @@ class RunDnsUpdate extends Command
         $this->logAndInfo($response);
         return ['success' => true, 'result' => $responseArray['result']];
     }
+    // private function check_ip_response($ipAddress)
+    // {
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, "$ipAddress:443");
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+    //     curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+
+    //     $response = curl_exec($ch);
+
+    //     if (curl_errno($ch)) {
+    //         $response = curl_error($ch);
+    //     } else {
+    //         $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    //     }
+
+    //     curl_close($ch);
+
+    //     return $response ? "HTTP/1.1 $response" : "No Response";
+    // }
     private function check_ip_response($ipAddress)
     {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "$ipAddress:443");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
 
+        // Set the IP address with port 443
+        curl_setopt($ch, CURLOPT_URL, "http://$ipAddress");
+        curl_setopt($ch, CURLOPT_PORT, 443); // Ensure it's HTTPS port 443
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
+        curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // Connection timeout
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Total timeout
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
+        
+        // Execute the cURL request
         $response = curl_exec($ch);
 
-        if (curl_errno($ch)) {
-            $response = curl_error($ch);
-        } else {
-            $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        }
+        // Handle cURL errors
+    // Get the HTTP status code
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
+    // Get the headers from the response
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $headers = substr($response, 0, $headerSize);
+
+    // Check for Cloudflare and HTTP 400 Bad Request
+    if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
+        $response = 'Cloudflare server detected with 400 Bad Request';
+        echo $response . "\n";
         curl_close($ch);
-
-        return $response ? "HTTP/1.1 $response" : "No Response";
+        return true;
+    } else {
+        $response = 'Not a Cloudflare server or not 400 Bad Request';
+        echo $response . "\n";
+        curl_close($ch);
+        return false;
     }
+        
+
+    }
+    
     private function delete_dns_record($recordId)
     {
         $url = "https://api.cloudflare.com/client/v4/zones/$this->zoneId/dns_records/$recordId";
