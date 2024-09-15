@@ -353,7 +353,7 @@ class RunDnsUpdate extends Command
     $isCloudflare = stripos($headers, 'cloudflare') !== false;
     // Check if the body contains 'Shopify'
     $containsShopify = stripos($body, 'shopify') !== false;
-    //echo $body;
+    echo $body;
     // Close the cURL session
     curl_close($ch);
     // Check for Cloudflare and HTTP 400 Bad Request
