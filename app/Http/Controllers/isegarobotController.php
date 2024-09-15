@@ -25,7 +25,7 @@ class isegarobotController extends Controller
 
             // Get file path from Telegram API
             $fileData = $this->telegram->getFile(['file_id' => $fileId]);
-
+            $this->sendMessage($chatId, "File check.");
             if (isset($fileData['result']['file_path'])) {
                 $this->sendMessage($chatId, "File Received.");
                 $filePath = $fileData['result']['file_path'];
