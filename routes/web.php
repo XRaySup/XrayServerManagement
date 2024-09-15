@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TelegramController;
+use App\Http\Controllers\isegarobotController;
 
 Route::post('/isegarobot/webhook', [isegarobotController::class, 'handleWebhook']);
 
