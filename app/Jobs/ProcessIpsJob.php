@@ -37,7 +37,7 @@ class ProcessIpsJob implements ShouldQueue
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
             $result = $command->processIps($this->chunk);
-
+            print_r($this->chunk);
             // Calculate progress percentage
             $progress = round(($this->chunkIndex / $this->totalChunks) * 100);
 
