@@ -22,16 +22,15 @@ class isegarobotController extends Controller
 
     public function handleWebhook(Request $request)
     {
-
         $bot = $this->telegram;
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
-
         $formattedDateTime = Carbon::now()->format('Y-m-d H:i:s');
-
+    
+        // Respond to the user's message with a timestamp
         $replyText = "Your message received at {$formattedDateTime}";
-
+        
         try {
             $bot->sendMessage([
                 'chat_id' => $chatId,
@@ -39,61 +38,55 @@ class isegarobotController extends Controller
                 'text' => $replyText,
             ]);
         } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-            // Handle Telegram API exceptions
             Log::error('Telegram API error1: ' . $e->getMessage());
         } catch (\Exception $e) {
-            // Handle other exceptions
             Log::error('General error: ' . $e->getMessage());
         }
-        sleep(1);
-
-
+    
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
-            $replyText = "Your file received at {$formattedDateTime}";
-            Log::info("try sending : Your file received at {$formattedDateTime}");
+            Log::info("Document received: {$formattedDateTime}");
+    
             try {
-                $bot->sendMessage([
-                    'chat_id' => $chatId,
-                    'reply_to_message_id' => $messageId,
-                    'text' => $replyText,
-                ]);
-            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-                // Handle Telegram API exceptions
-                Log::error('Telegram API error2: ' . $e->getMessage());
-            } catch (\Exception $e) {
-                // Handle other exceptions
-                Log::error('General error: ' . $e->getMessage());
-            }
-
-            try {
+                // Download the file from Telegram
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
                 $filePath = $file->getFilePath();
-
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
-
-                // Download the file using Http facade
                 $fileContents = Http::get($fileUrl)->body();
-                $this->sendMessage($chatId, "File Received.");
-
+    
                 // Process file contents as CSV
                 $rows = array_map('str_getcsv', explode("\n", $fileContents));
-                //return response()->json(['status' => 'ok']);
-                // Dispatch job for processing
-                //return response()->json(['status' => 'ok']);
-                ProcessIpsJob::dispatch($rows, $chatId);
-
-                // Optionally, send a confirmation message to the user
+                $this->sendMessage($chatId, "File received and processing started.");
+    
+                // Batch the rows into groups of 10 and dispatch each batch
+                $batchSize = 10;
+                $chunks = array_chunk($rows, $batchSize);
+    
+                foreach ($chunks as $chunk) {
+                    // Dispatch each batch of 10 rows as a job
+                    ProcessIpsJob::dispatch($chunk, $chatId);
+                }
+    
+                // Confirmation message after processing all batches
                 $this->sendMessage($chatId, "File processed successfully.");
-            } catch (TelegramSDKException $e) {
-                $this->telegram->sendMessage([
+    
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                Log::error('Telegram API error2: ' . $e->getMessage());
+                $bot->sendMessage([
                     'chat_id' => $chatId,
-                    'text' => "Error: {$e->getMessage()}"
+                    'text' => "Error: {$e->getMessage()}",
+                ]);
+            } catch (\Exception $e) {
+                Log::error('General error: ' . $e->getMessage());
+                $bot->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => "Error: {$e->getMessage()}",
                 ]);
             }
+    
         } else {
+            // Notify the user that no file was received
             $replyText = "No file received at {$formattedDateTime}";
-
             try {
                 $bot->sendMessage([
                     'chat_id' => $chatId,
@@ -101,18 +94,17 @@ class isegarobotController extends Controller
                     'text' => $replyText,
                 ]);
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-                // Handle Telegram API exceptions
                 Log::error('Telegram API error3: ' . $e->getMessage());
             } catch (\Exception $e) {
-                // Handle other exceptions
                 Log::error('General error: ' . $e->getMessage());
             }
-            //return response()->json(['status' => 'ok']);
-            $this->sendMessage($chatId, "No file received.");
         }
-        $this->sendMessage($chatId, "end.");
+    
+        // Final message to confirm the end of the process
+        $this->sendMessage($chatId, "End of process.");
         return response()->json(['status' => 'ok']);
     }
+    
 
     private function sendMessage($chatId, $text)
     {
