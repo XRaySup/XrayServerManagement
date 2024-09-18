@@ -28,19 +28,20 @@ class isegarobotController extends Controller
         $messageId = $message['message_id'];
         $formattedDateTime = Carbon::now()->format('Y-m-d H:i:s');
     
-        // Respond to the user's message with a timestamp
-        $replyText = "Your message received at {$formattedDateTime}";
-        
+        // Send initial message about processing start
+        $initialReply = "Your file is being processed. Progress: 0%";
         try {
-            $bot->sendMessage([
+            $response = $bot->sendMessage([
                 'chat_id' => $chatId,
                 'reply_to_message_id' => $messageId,
-                'text' => $replyText,
+                'text' => $initialReply,
             ]);
+    
+            // Get the message ID of the sent message to edit later
+            $progressMessageId = $response->getMessageId();
+    
         } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
             Log::error('Telegram API error1: ' . $e->getMessage());
-        } catch (\Exception $e) {
-            Log::error('General error: ' . $e->getMessage());
         }
     
         if (isset($message['document'])) {
@@ -56,19 +57,16 @@ class isegarobotController extends Controller
     
                 // Process file contents as CSV
                 $rows = array_map('str_getcsv', explode("\n", $fileContents));
-                $this->sendMessage($chatId, "File received and processing started.");
     
                 // Batch the rows into groups of 10 and dispatch each batch
                 $batchSize = 10;
                 $chunks = array_chunk($rows, $batchSize);
+                $totalChunks = count($chunks);
     
-                foreach ($chunks as $chunk) {
-                    // Dispatch each batch of 10 rows as a job
-                    ProcessIpsJob::dispatch($chunk, $chatId);
+                foreach ($chunks as $index => $chunk) {
+                    // Dispatch each batch of 10 rows as a job and pass the message ID and index
+                    ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $index + 1, $totalChunks);
                 }
-    
-                // Confirmation message after processing all batches
-                $this->sendMessage($chatId, "File processed successfully.");
     
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error2: ' . $e->getMessage());
@@ -91,7 +89,6 @@ class isegarobotController extends Controller
                 $bot->sendMessage([
                     'chat_id' => $chatId,
                     'reply_to_message_id' => $messageId,
-                    'text' => $replyText,
                 ]);
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error3: ' . $e->getMessage());
@@ -100,8 +97,6 @@ class isegarobotController extends Controller
             }
         }
     
-        // Final message to confirm the end of the process
-        $this->sendMessage($chatId, "End of process.");
         return response()->json(['status' => 'ok']);
     }
     
