@@ -65,7 +65,7 @@ class isegarobotController extends Controller
                 // Handle other exceptions
                 Log::error('General error: ' . $e->getMessage());
             }
-            return response()->json(['status' => 'ok']);
+
             try {
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
                 $filePath = $file->getFilePath();
