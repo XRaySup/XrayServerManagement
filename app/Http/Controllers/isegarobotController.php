@@ -22,37 +22,7 @@ class isegarobotController extends Controller
 
     public function handleWebhook(Request $request)
     {
-        $chatId = $request->input('message.chat.id');
-        $messages = [
-            'Message 1',
-            'Message 2',
-            'Message 3'
-        ];
-    
-        foreach ($messages as $message) {
-            try {
-                $this->sendMessage($chatId, $message);
-                
-                // Delay between messages (e.g., 1 second)
-                sleep(10);
-    
-            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-                Log::error('Telegram API error: ' . $e->getMessage());
-                
-                // If Telegram's rate limit applies, it returns the retry-after time in seconds.
-                if ($e->getCode() == 429) {
-                    $retryAfter = $e->getParameters()->retry_after;
-                    
-                    Log::warning("Rate limit exceeded. Retry after {$retryAfter} seconds.");
-                    
-                    // Sleep for the retry-after period
-                    sleep($retryAfter);
-                }
-    
-            } catch (\Exception $e) {
-                Log::error('General error: ' . $e->getMessage());
-            }
-        }
+        
         $bot = $this->telegram;
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
@@ -75,7 +45,7 @@ class isegarobotController extends Controller
             // Handle other exceptions
             Log::error('General error: ' . $e->getMessage());
         }
-        sleep(3);
+        sleep(1);
         
 
         if (isset($message['document'])) {
