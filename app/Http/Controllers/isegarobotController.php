@@ -163,4 +163,10 @@ class isegarobotController extends Controller
             $controller->sendMessage($chatId, $message);
         }
     }
+    public static function reply($result, $chatId)
+    {
+        $controller = new self(); // create an instance to call non-static methods
+        $controller->sendMessage($chatId, $result);
+
+    }
 }
