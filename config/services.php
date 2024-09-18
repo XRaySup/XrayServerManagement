@@ -30,5 +30,19 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
+    'cloudflare' => [
+        'accounts' => [
+            'com' => [
+                'api_key' => env('CLOUDFLARE_API_KEY_I_com'),
+                'email' => env('CLOUDFLARE_EMAIL_I_com'),
+                'zone_id' => env('CLOUDFLARE_ZONE_ID_I_com'),
+            ],
+            'org' => [
+                'api_key' => env('CLOUDFLARE_API_KEY_I_ORG'),
+                'email' => env('CLOUDFLARE_EMAIL_I_ORG'),
+                'zone_id' => env('CLOUDFLARE_ZONE_ID_I_ORG'),
+            ],
+        ],
+    ],
 
 ];

@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Http;
 use Telegram\Bot\Exceptions\TelegramSDKException;
-use Illuminate\Support\Facades\Storage;
+use Telegram\Bot\Exceptions\TelegramResponseException;
 use App\Jobs\ProcessIpsJob;
 
 class isegarobotController extends Controller
@@ -22,27 +22,27 @@ class isegarobotController extends Controller
     {
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
+
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
 
             try {
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
                 $filePath = $file->getFilePath();
+
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
 
-                // Download the file
-                $fileContents = file_get_contents($fileUrl);
+                // Download the file using Http facade
+                $fileContents = Http::get($fileUrl)->body();
                 $this->sendMessage($chatId, "File Received.");
 
-                $fileContents = Http::get($fileUrl)->body();
-                // Dispatch job for processing
-                // Process file contents
-                ProcessIpsJob::dispatch($fileContents, $chatId);
+                // Process file contents as CSV
+                $rows = array_map('str_getcsv', explode("\n", $fileContents));
 
-                //$this->processFileContents($fileContents, $chatId);
+                // Dispatch job for processing
+                ProcessIpsJob::dispatch($rows, $chatId);
 
                 // Optionally, send a confirmation message to the user
-
                 $this->sendMessage($chatId, "File processed successfully.");
             } catch (TelegramSDKException $e) {
                 $this->telegram->sendMessage([
@@ -51,129 +51,58 @@ class isegarobotController extends Controller
                 ]);
             }
         } else {
-
             $this->sendMessage($chatId, "No file received.");
         }
 
         return response()->json(['status' => 'ok']);
     }
 
-    private function readCSVFromGoogleDrive($filename)
-    {
-        $file = Storage::disk('google')->get('DNSUpdate/' . $filename);
-        $rows = array_map('str_getcsv', explode("\n", $file));
-
-        // Remove header
-        array_shift($rows);
-
-        return $rows;
-    }
-    public function processFileContents($contents, $chatId)
-    {
-        // Split contents into lines
-        $lines = explode("\n", trim($contents));
-        $validIps = [];
-
-        foreach ($lines as $line) {
-            $ip = trim($line);
-
-            // Validate the IP address
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                $ipresponse = $this->check_ip_response($ip);
-
-                // Set the expected response
-                //$expectedResponse = 'HTTP/1.1 400';
-
-                // Check and update unexpected response count
-                if ($ipresponse === false) {
-                    $this->sendMessage($chatId, "ip '$ip' : Wrong response.");
-                } else {
-                    $validIps[] = $ip;
-                    $this->sendMessage($chatId, "ip '$ip' : Expected response.");
-                }
-            }
-        }
-        // Save valid IPs to Google Drive
-        if (!empty($validIps)) {
-            $this->saveIpsToGoogleDrive($validIps);
-        }
-    }
-    // Function to write the CSV file
-    private function writeCSVToGoogleDrive($filename, $data)
-    {
-        // Convert the data to CSV format
-        $handle = fopen('php://temp', 'r+');
-        foreach ($data as $row) {
-            fputcsv($handle, $row);
-        }
-        rewind($handle);
-        $csvContent = stream_get_contents($handle);
-        fclose($handle);
-
-        // Write the updated content back to Google Drive
-        Storage::disk('google')->put('DNSUpdate/' . $filename, $csvContent);
-    }
-    private function saveIpsToGoogleDrive(array $ips)
-    {
-        $rows = $this->readCSVFromGoogleDrive('ip.csv');
-        // Prepare new data to append
-        foreach ($ips as $ip) {
-            // Assuming the CSV has only IPs, you might need to adjust this based on your actual CSV structure
-            $rows[] = [$ip];
-        }
-        // Write updated data to Google Drive
-        $this->writeCSVToGoogleDrive('ip.csv', $rows);
-    }
-    private function check_ip_response($ipAddress)
-    {
-        $ch = curl_init();
-
-        // Set the IP address with port 443
-        curl_setopt($ch, CURLOPT_URL, "http://$ipAddress");
-        curl_setopt($ch, CURLOPT_PORT, 443); // Ensure it's HTTPS port 443
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
-        curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // Connection timeout
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Total timeout
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
-
-        // Execute the cURL request
-        $response = curl_exec($ch);
-        // Handle cURL errors
-        if (curl_errno($ch)) {
-            $error = curl_error($ch);
-            echo $error;
-            echo "IP did not respond or error occurred.\n";
-            curl_close($ch);
-            return false;
-        }
-        // Handle cURL errors
-        // Get the HTTP status code
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        // Get the headers from the response
-        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $headers = substr($response, 0, $headerSize);
-
-        // Check for Cloudflare and HTTP 400 Bad Request
-        if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
-            $response = 'Cloudflare server detected with 400 Bad Request';
-            echo $response . "\n";
-            curl_close($ch);
-            return true;
-        } else {
-            $response = 'Not a Cloudflare server or not 400 Bad Request';
-            echo $response . "\n";
-            curl_close($ch);
-            return false;
-        }
-    }
     private function sendMessage($chatId, $text)
     {
-        $this->telegram->sendMessage([
-            'chat_id' => $chatId,
-            'text' => $text,
-        ]);
+        try {
+            $this->telegram->sendMessage([
+                'chat_id' => $chatId,
+                'text' => $text,
+            ]);
+        } catch (TelegramResponseException $e) {
+            // Extract the retry-after value from the exception message
+            $retryAfter = $e->getMessage(); // This may contain the retry time in seconds
+            
+            // You might need to parse the retry time from the message
+            preg_match('/retry after (\d+)/i', $retryAfter, $matches);
+            $delay = $matches[1] ?? 60; // Default to 60 seconds if parsing fails
+            //print_r($retryAfter );
+            \Log::warning("Rate limit exceeded. Retrying after $delay seconds.");
+
+            sleep($delay); // Wait before retrying
+
+            // Retry sending the message
+            try {
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => $text,
+                ]);
+            } catch (TelegramResponseException $e) {
+                \Log::error("Failed to send message after retry: " . $e->getMessage());
+            }
+        }
+    }
+
+    public static function replyIps($result, $chatId)
+    {
+        $controller = new self(); // create an instance to call non-static methods
+        if (count($result) > 10) {
+            $controller->replyToFile($chatId, $result);
+        } else {
+            $message = '';
+            foreach ($result as $ipInfo) {
+                $message .= "IP: {$ipInfo['ip']}\n";
+                $message .= "Expected Response: " . ($ipInfo['ExpectedResponse'] ? 'True' : 'False') . "\n";
+                $message .= "Exists in Log: " . ($ipInfo['ExisInLog'] ? 'True' : 'False') . "\n";
+                $message .= "Exists in DNS: " . ($ipInfo['ExistInDNS'] ? 'True' : 'False') . "\n";
+                $message .= "--------------------------\n";
+            }
+            $controller->sendMessage($chatId, $message);
+        }
     }
 }
