@@ -22,16 +22,16 @@ class isegarobotController extends Controller
 
     public function handleWebhook(Request $request)
     {
-        
+
         $bot = $this->telegram;
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
-        
+
         $formattedDateTime = Carbon::now()->format('Y-m-d H:i:s');
-    
+
         $replyText = "Your message received at {$formattedDateTime}";
-    
+
         try {
             $bot->sendMessage([
                 'chat_id' => $chatId,
@@ -46,7 +46,7 @@ class isegarobotController extends Controller
             Log::error('General error: ' . $e->getMessage());
         }
         sleep(1);
-        
+
 
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
@@ -93,7 +93,7 @@ class isegarobotController extends Controller
             }
         } else {
             $replyText = "No file received at {$formattedDateTime}";
-    
+
             try {
                 $bot->sendMessage([
                     'chat_id' => $chatId,
@@ -116,7 +116,7 @@ class isegarobotController extends Controller
 
     private function sendMessage($chatId, $text)
     {
-        
+
         try {
             $this->telegram->sendMessage([
                 'chat_id' => $chatId,
@@ -125,7 +125,7 @@ class isegarobotController extends Controller
         } catch (TelegramResponseException $e) {
             // Extract the retry-after value from the exception message
             $retryAfter = $e->getMessage(); // This may contain the retry time in seconds
-            
+
             // You might need to parse the retry time from the message
             preg_match('/retry after (\d+)/i', $retryAfter, $matches);
             $delay = $matches[1] ?? 60; // Default to 60 seconds if parsing fails
@@ -149,24 +149,20 @@ class isegarobotController extends Controller
     public static function replyIps($result, $chatId)
     {
         $controller = new self(); // create an instance to call non-static methods
-        if (count($result) > 10) {
-            $controller->replyToFile($chatId, $result);
-        } else {
-            $message = '';
-            foreach ($result as $ipInfo) {
-                $message .= "IP: {$ipInfo['ip']}\n";
-                $message .= "Expected Response: " . ($ipInfo['ExpectedResponse'] ? 'True' : 'False') . "\n";
-                $message .= "Exists in Log: " . ($ipInfo['ExisInLog'] ? 'True' : 'False') . "\n";
-                $message .= "Exists in DNS: " . ($ipInfo['ExistInDNS'] ? 'True' : 'False') . "\n";
-                $message .= "--------------------------\n";
-            }
-            $controller->sendMessage($chatId, $message);
+
+        $message = '';
+        foreach ($result as $ipInfo) {
+            $message .= "IP: {$ipInfo['ip']}\n";
+            $message .= "Expected Response: " . ($ipInfo['ExpectedResponse'] ? 'True' : 'False') . "\n";
+            $message .= "Exists in Log: " . ($ipInfo['ExisInLog'] ? 'True' : 'False') . "\n";
+            $message .= "Exists in DNS: " . ($ipInfo['ExistInDNS'] ? 'True' : 'False') . "\n";
+            $message .= "--------------------------\n";
         }
+        $controller->sendMessage($chatId, $message);
     }
     public static function reply($result, $chatId)
     {
         $controller = new self(); // create an instance to call non-static methods
         $controller->sendMessage($chatId, $result);
-
     }
 }
