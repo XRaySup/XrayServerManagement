@@ -25,17 +25,17 @@ class ProcessIpsJob implements ShouldQueue
 
     public function handle(isegarobotController $controller)
     {
-        try {
-            // Instantiate the RunDnsUpdate command and process IPs
-            $command = app(RunDnsUpdate::class);
-            $result = $command->processIps($this->fileContents);
+        // try {
+        //     // Instantiate the RunDnsUpdate command and process IPs
+        //     $command = app(RunDnsUpdate::class);
+        //     $result = $command->processIps($this->fileContents);
 
-            // Send the result back via the bot
-            $controller->replyIps($result, $this->chatId);
+        //     // Send the result back via the bot
+        //     $controller->replyIps($result, $this->chatId);
 
-        } catch (\Exception $e) {
-            \Log::error('Failed to process IPs: ' . $e->getMessage());
-            $controller->reply("There was an error processing the IPs.", $this->chatId);
-        }
+        // } catch (\Exception $e) {
+        //     \Log::error('Failed to process IPs: ' . $e->getMessage());
+        //     $controller->reply("There was an error processing the IPs.", $this->chatId);
+        // }
     }
 }
