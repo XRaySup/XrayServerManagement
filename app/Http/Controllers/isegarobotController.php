@@ -70,17 +70,7 @@ class isegarobotController extends Controller
                     // Dispatch job for the current batch
                     ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
     
-                    // Update progress after processing the batch
-                    $progress = round(($chunkIndex / $totalChunks) * 100);
-                    try {
-                        $bot->editMessageText([
-                            'chat_id' => $chatId,
-                            'message_id' => $progressMessageId,
-                            'text' => "Your file is being processed. Progress: {$progress}%",
-                        ]);
-                    } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-                        Log::error('Telegram API error2: ' . $e->getMessage());
-                    }
+
     
                     $currentIndex += 10;
     
@@ -88,12 +78,7 @@ class isegarobotController extends Controller
                     sleep(1);
                 }
     
-                // Final confirmation after processing all chunks
-                $bot->editMessageText([
-                    'chat_id' => $chatId,
-                    'message_id' => $progressMessageId,
-                    'text' => "File processed successfully. Progress: 100%",
-                ]);
+
     
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error3: ' . $e->getMessage());
