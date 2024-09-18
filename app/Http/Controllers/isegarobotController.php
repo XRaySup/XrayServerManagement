@@ -51,7 +51,7 @@ class isegarobotController extends Controller
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
             $replyText = "Your file received at {$formattedDateTime}";
-    
+            Log::info("try sending : Your file received at {$formattedDateTime}");
             try {
                 $bot->sendMessage([
                     'chat_id' => $chatId,
