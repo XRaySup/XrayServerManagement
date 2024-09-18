@@ -33,9 +33,9 @@ return [
     'cloudflare' => [
         'accounts' => [
             'com' => [
-                'api_key' => env('CLOUDFLARE_API_KEY_I_com'),
-                'email' => env('CLOUDFLARE_EMAIL_I_com'),
-                'zone_id' => env('CLOUDFLARE_ZONE_ID_I_com'),
+                'api_key' => env('CLOUDFLARE_API_KEY_I_COM'),
+                'email' => env('CLOUDFLARE_EMAIL_I_COM'),
+                'zone_id' => env('CLOUDFLARE_ZONE_ID_I_COM'),
             ],
             'org' => [
                 'api_key' => env('CLOUDFLARE_API_KEY_I_ORG'),
