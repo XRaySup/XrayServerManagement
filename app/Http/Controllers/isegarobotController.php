@@ -106,10 +106,10 @@ class isegarobotController extends Controller
                 // Handle other exceptions
                 Log::error('General error: ' . $e->getMessage());
             }
-            return response()->json(['status' => 'ok']);
+            //return response()->json(['status' => 'ok']);
             $this->sendMessage($chatId, "No file received.");
         }
-
+        $this->sendMessage($chatId, "end.");
         return response()->json(['status' => 'ok']);
     }
 
