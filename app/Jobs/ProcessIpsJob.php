@@ -34,6 +34,7 @@ class ProcessIpsJob implements ShouldQueue
     public function handle()
     {
         try {
+            $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
             $result = $command->processIps($this->chunk);
@@ -43,7 +44,7 @@ class ProcessIpsJob implements ShouldQueue
 
             // Update the progress message on Telegram
             try {
-                $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+
                 $telegram->editMessageText([
                     'chat_id' => $this->chatId,
                     'message_id' => $this->progressMessageId,
