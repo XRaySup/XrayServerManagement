@@ -80,7 +80,7 @@ class isegarobotController extends Controller
                 $rows = array_map('str_getcsv', explode("\n", $fileContents));
                 //return response()->json(['status' => 'ok']);
                 // Dispatch job for processing
-                ProcessIpsJob::dispatch($rows, $chatId);
+                ProcessIpsJob::dispatchAfterResponse($rows, $chatId);
 
                 // Optionally, send a confirmation message to the user
                 $this->sendMessage($chatId, "File processed successfully.");
