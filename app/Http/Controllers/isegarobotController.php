@@ -20,8 +20,23 @@ class isegarobotController extends Controller
 
     public function handleWebhook(Request $request)
     {
+        $bot = new Api('YOUR_BOT_TOKEN');
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
+        $messageId = $message['message_id'];
+        
+        $dateTime = new \DateTime();
+        $formattedDateTime = $dateTime->format('Y-m-d H:i:s');
+    
+        $replyText = "Your message received at {$formattedDateTime}";
+    
+        $bot->sendMessage([
+            'chat_id' => $chatId,
+            'reply_to_message_id' => $messageId,
+            'text' => $replyText,
+        ]);
+    
+        return response()->json(['status' => 'ok']);
 
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
@@ -59,6 +74,7 @@ class isegarobotController extends Controller
 
     private function sendMessage($chatId, $text)
     {
+        
         try {
             $this->telegram->sendMessage([
                 'chat_id' => $chatId,
