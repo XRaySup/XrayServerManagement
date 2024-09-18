@@ -44,7 +44,7 @@ class isegarobotController extends Controller
             // Handle other exceptions
             Log::error('General error: ' . $e->getMessage());
         }
-    
+        sleep(3);
         
 
         if (isset($message['document'])) {
