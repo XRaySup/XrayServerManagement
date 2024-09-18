@@ -31,7 +31,7 @@ class RunDnsUpdate extends Command
         $this->apiToken = env('CLOUDFLARE_API_TOKEN');
         $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_DOMAIN');
         $this->logFile = base_path('storage/logs/dns_update.log');
-        
+
         $this->cloudflare = new CloudflareApiService(env('CLOUDFLARE_DOMAIN'));
  
         $this->ipLog = base_path('storage/logs/' . $this->subdomainPattern . '.csv');
@@ -229,8 +229,8 @@ class RunDnsUpdate extends Command
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
         curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // Connection timeout
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Total timeout
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1); // Connection timeout
+        curl_setopt($ch, CURLOPT_TIMEOUT, 1); // Total timeout
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
 
         // Execute the cURL request

@@ -13,7 +13,7 @@ use App\Http\Controllers\isegarobotController;
 class ProcessIpsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
+    public $timeout = 900; // Set timeout to 5 minutes (300 seconds)
     protected $fileContents;
     protected $chatId;
 
@@ -25,6 +25,7 @@ class ProcessIpsJob implements ShouldQueue
 
     public function handle(isegarobotController $controller)
     {
+
         try {
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
