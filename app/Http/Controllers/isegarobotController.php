@@ -45,11 +45,26 @@ class isegarobotController extends Controller
             Log::error('General error: ' . $e->getMessage());
         }
     
-        return response()->json(['status' => 'ok']);
+        
 
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
-
+            $replyText = "Your file received at {$formattedDateTime}";
+    
+            try {
+                $bot->sendMessage([
+                    'chat_id' => $chatId,
+                    'reply_to_message_id' => $messageId,
+                    'text' => $replyText,
+                ]);
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                // Handle Telegram API exceptions
+                Log::error('Telegram API error: ' . $e->getMessage());
+            } catch (\Exception $e) {
+                // Handle other exceptions
+                Log::error('General error: ' . $e->getMessage());
+            }
+            return response()->json(['status' => 'ok']);
             try {
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
                 $filePath = $file->getFilePath();
@@ -75,6 +90,22 @@ class isegarobotController extends Controller
                 ]);
             }
         } else {
+            $replyText = "No file received at {$formattedDateTime}";
+    
+            try {
+                $bot->sendMessage([
+                    'chat_id' => $chatId,
+                    'reply_to_message_id' => $messageId,
+                    'text' => $replyText,
+                ]);
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                // Handle Telegram API exceptions
+                Log::error('Telegram API error: ' . $e->getMessage());
+            } catch (\Exception $e) {
+                // Handle other exceptions
+                Log::error('General error: ' . $e->getMessage());
+            }
+            return response()->json(['status' => 'ok']);
             $this->sendMessage($chatId, "No file received.");
         }
 
