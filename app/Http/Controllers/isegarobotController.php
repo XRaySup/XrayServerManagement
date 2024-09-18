@@ -20,21 +20,28 @@ class isegarobotController extends Controller
 
     public function handleWebhook(Request $request)
     {
-        $bot = new Api('YOUR_BOT_TOKEN');
+        $bot = $this->telegram;
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
         
-        $dateTime = new \DateTime();
-        $formattedDateTime = $dateTime->format('Y-m-d H:i:s');
+        $formattedDateTime = Carbon::now()->format('Y-m-d H:i:s');
     
         $replyText = "Your message received at {$formattedDateTime}";
     
-        $bot->sendMessage([
-            'chat_id' => $chatId,
-            'reply_to_message_id' => $messageId,
-            'text' => $replyText,
-        ]);
+        try {
+            $bot->sendMessage([
+                'chat_id' => $chatId,
+                'reply_to_message_id' => $messageId,
+                'text' => $replyText,
+            ]);
+        } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+            // Handle Telegram API exceptions
+            Log::error('Telegram API error: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            // Handle other exceptions
+            Log::error('General error: ' . $e->getMessage());
+        }
     
         return response()->json(['status' => 'ok']);
 
