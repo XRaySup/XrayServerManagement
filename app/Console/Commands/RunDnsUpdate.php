@@ -31,6 +31,7 @@ class RunDnsUpdate extends Command
         $this->apiToken = env('CLOUDFLARE_API_TOKEN');
         $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_DOMAIN');
         $this->logFile = base_path('storage/logs/dns_update.log');
+        
         $this->cloudflare = new CloudflareApiService(env('CLOUDFLARE_DOMAIN'));
  
         $this->ipLog = base_path('storage/logs/' . $this->subdomainPattern . '.csv');
