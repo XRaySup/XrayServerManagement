@@ -9,6 +9,7 @@ use Telegram\Bot\Exceptions\TelegramSDKException;
 use Telegram\Bot\Exceptions\TelegramResponseException;
 use App\Jobs\ProcessIpsJob;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class isegarobotController extends Controller
 {
