@@ -33,7 +33,7 @@ class ProcessIpsJob implements ShouldQueue
 
     public function handle()
     {
-        try {
+        //try {
             $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
@@ -54,9 +54,9 @@ class ProcessIpsJob implements ShouldQueue
                 Log::error('Telegram API error while updating progress: ' . $e->getMessage());
             }
 
-        } catch (\Exception $e) {
-            \Log::error('Failed to process IPs: ' . $e->getMessage());
-            // Handle error sending message or logging here
-        }
+        //} catch (\Exception $e) {
+        //    \Log::error('Failed to process IPs: ' . $e->getMessage());
+        //    // Handle error sending message or logging here
+        //}
     }
 }
