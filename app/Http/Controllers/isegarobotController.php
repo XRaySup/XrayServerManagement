@@ -64,6 +64,7 @@ class isegarobotController extends Controller
                 $currentIndex = 0;
                 while ($currentIndex < $totalRows) {
                     $chunk = array_slice($rows, $currentIndex, 10);
+                    $chunk = array_values($chunk); // Remove keys from the chunk
                     $chunkIndex = ceil(($currentIndex + 10) / 10);
     
                     // Dispatch job for the current batch
