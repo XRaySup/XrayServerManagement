@@ -43,7 +43,7 @@ class CloudflareApiService
             ])->{$method}($this->apiUrl . $endpoint, $data);
     
             // Log the raw response for debugging
-            \Log::info('API Response', ['response' => $response->json()]);
+            //\Log::info('API Response', ['response' => $response->json()]);
     
             if ($response->failed()) {
                 \Log::error('API Request Failed', [
