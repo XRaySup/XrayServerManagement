@@ -8,39 +8,38 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Console\Commands\RunDnsUpdate;
-use App\Http\Controllers\isegarobotController;
 use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Log;
 
 class ProcessIpsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    public $timeout = 900; // Set timeout to 5 minutes (300 seconds)
-    //protected $fileContents;
+
+    public $timeout = 900; // Set timeout to 15 minutes
     protected $chatId;
     protected $chunk;
     protected $progressMessageId;
-    protected $index;
+    protected $chunkIndex;
     protected $totalChunks;
 
-    public function __construct($chunk, $chatId, $progressMessageId, $index, $totalChunks)
+    public function __construct($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks)
     {
         $this->chunk = $chunk;
         $this->chatId = $chatId;
         $this->progressMessageId = $progressMessageId;
-        $this->index = $index;
+        $this->chunkIndex = $chunkIndex;
         $this->totalChunks = $totalChunks;
     }
 
-    public function handle(isegarobotController $controller)
+    public function handle()
     {
-
         try {
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
             $result = $command->processIps($this->chunk);
+
             // Calculate progress percentage
-            $progress = round(($this->index / $this->totalChunks) * 100);
+            $progress = round(($this->chunkIndex / $this->totalChunks) * 100);
 
             // Update the progress message on Telegram
             try {
@@ -53,12 +52,10 @@ class ProcessIpsJob implements ShouldQueue
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error while updating progress: ' . $e->getMessage());
             }
-            // Send the result back via the bot
-            //$controller->replyIps($result, $this->chatId);
 
         } catch (\Exception $e) {
             \Log::error('Failed to process IPs: ' . $e->getMessage());
-            $controller->reply("There was an error processing the IPs.", $this->chatId);
+            // Handle error sending message or logging here
         }
     }
 }

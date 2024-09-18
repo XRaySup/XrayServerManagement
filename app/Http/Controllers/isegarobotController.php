@@ -57,19 +57,45 @@ class isegarobotController extends Controller
     
                 // Process file contents as CSV
                 $rows = array_map('str_getcsv', explode("\n", $fileContents));
+                $totalRows = count($rows);
+                $totalChunks = ceil($totalRows / 10);
     
-                // Batch the rows into groups of 10 and dispatch each batch
-                $batchSize = 10;
-                $chunks = array_chunk($rows, $batchSize);
-                $totalChunks = count($chunks);
+                // Manually process rows in batches of 10
+                $currentIndex = 0;
+                while ($currentIndex < $totalRows) {
+                    $chunk = array_slice($rows, $currentIndex, 10);
+                    $chunkIndex = ceil(($currentIndex + 10) / 10);
     
-                foreach ($chunks as $index => $chunk) {
-                    // Dispatch each batch of 10 rows as a job and pass the message ID and index
-                    ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $index + 1, $totalChunks);
+                    // Dispatch job for the current batch
+                    ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
+    
+                    // Update progress after processing the batch
+                    $progress = round(($chunkIndex / $totalChunks) * 100);
+                    try {
+                        $bot->editMessageText([
+                            'chat_id' => $chatId,
+                            'message_id' => $progressMessageId,
+                            'text' => "Your file is being processed. Progress: {$progress}%",
+                        ]);
+                    } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                        Log::error('Telegram API error2: ' . $e->getMessage());
+                    }
+    
+                    $currentIndex += 10;
+    
+                    // Optional: Add a small delay to prevent rate limiting issues
+                    sleep(1);
                 }
     
+                // Final confirmation after processing all chunks
+                $bot->editMessageText([
+                    'chat_id' => $chatId,
+                    'message_id' => $progressMessageId,
+                    'text' => "File processed successfully. Progress: 100%",
+                ]);
+    
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-                Log::error('Telegram API error2: ' . $e->getMessage());
+                Log::error('Telegram API error3: ' . $e->getMessage());
                 $bot->sendMessage([
                     'chat_id' => $chatId,
                     'text' => "Error: {$e->getMessage()}",
@@ -89,9 +115,10 @@ class isegarobotController extends Controller
                 $bot->sendMessage([
                     'chat_id' => $chatId,
                     'reply_to_message_id' => $messageId,
+                    'text' => $replyText,
                 ]);
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-                Log::error('Telegram API error3: ' . $e->getMessage());
+                Log::error('Telegram API error4: ' . $e->getMessage());
             } catch (\Exception $e) {
                 Log::error('General error: ' . $e->getMessage());
             }
