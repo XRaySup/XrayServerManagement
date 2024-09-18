@@ -328,7 +328,7 @@ class RunDnsUpdate extends Command
                     'ExisInLog' => $ExisInLog,
                     'ExistInDNS' => $ExistInDNS,
                 ];
-                $this->logAndInfo("'$ip' Expected Response: '" . ($ExpectedResponse ? 'True' : 'False') . "', Exist in Log: '" . ($ExisInLog ? 'True' : 'False'). "', Exist in DNS: " . ($ExistInDNS ? 'True' : 'False'));
+                //$this->logAndInfo("'$ip' Expected Response: '" . ($ExpectedResponse ? 'True' : 'False') . "', Exist in Log: '" . ($ExisInLog ? 'True' : 'False'). "', Exist in DNS: " . ($ExistInDNS ? 'True' : 'False'));
                 if($ExpectedResponse && !$ExisInLog && !$ExistInDNS){
                     $this->cloudflare->addDNSRecord($this->subdomainPattern,$ip);
                 }
