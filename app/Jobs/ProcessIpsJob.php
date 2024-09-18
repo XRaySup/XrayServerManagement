@@ -16,7 +16,7 @@ class ProcessIpsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
     public $timeout = 900; // Set timeout to 5 minutes (300 seconds)
-    protected $fileContents;
+    //protected $fileContents;
     protected $chatId;
     protected $chunk;
     protected $progressMessageId;
@@ -38,21 +38,21 @@ class ProcessIpsJob implements ShouldQueue
         try {
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
-            $result = $command->processIps($this->fileContents);
-        // Calculate progress percentage
-        $progress = round(($this->index / $this->totalChunks) * 100);
+            $result = $command->processIps($this->chunk);
+            // Calculate progress percentage
+            $progress = round(($this->index / $this->totalChunks) * 100);
 
-        // Update the progress message on Telegram
-        try {
-            $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
-            $telegram->editMessageText([
-                'chat_id' => $this->chatId,
-                'message_id' => $this->progressMessageId,
-                'text' => "Your file is being processed. Progress: {$progress}%",
-            ]);
-        } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-            Log::error('Telegram API error while updating progress: ' . $e->getMessage());
-        }
+            // Update the progress message on Telegram
+            try {
+                $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+                $telegram->editMessageText([
+                    'chat_id' => $this->chatId,
+                    'message_id' => $this->progressMessageId,
+                    'text' => "Your file is being processed. Progress: {$progress}%",
+                ]);
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                Log::error('Telegram API error while updating progress: ' . $e->getMessage());
+            }
             // Send the result back via the bot
             //$controller->replyIps($result, $this->chatId);
 
