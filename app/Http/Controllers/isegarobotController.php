@@ -34,7 +34,7 @@ class isegarobotController extends Controller
                 $this->sendMessage($chatId, $message);
                 
                 // Delay between messages (e.g., 1 second)
-                sleep(1);
+                sleep(10);
     
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
