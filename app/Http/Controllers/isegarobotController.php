@@ -39,7 +39,7 @@ class isegarobotController extends Controller
             ]);
         } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
             // Handle Telegram API exceptions
-            Log::error('Telegram API error: ' . $e->getMessage());
+            Log::error('Telegram API error1: ' . $e->getMessage());
         } catch (\Exception $e) {
             // Handle other exceptions
             Log::error('General error: ' . $e->getMessage());
@@ -59,7 +59,7 @@ class isegarobotController extends Controller
                 ]);
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 // Handle Telegram API exceptions
-                Log::error('Telegram API error: ' . $e->getMessage());
+                Log::error('Telegram API error2: ' . $e->getMessage());
             } catch (\Exception $e) {
                 // Handle other exceptions
                 Log::error('General error: ' . $e->getMessage());
@@ -100,7 +100,7 @@ class isegarobotController extends Controller
                 ]);
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 // Handle Telegram API exceptions
-                Log::error('Telegram API error: ' . $e->getMessage());
+                Log::error('Telegram API error3: ' . $e->getMessage());
             } catch (\Exception $e) {
                 // Handle other exceptions
                 Log::error('General error: ' . $e->getMessage());
