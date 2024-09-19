@@ -316,15 +316,18 @@ class RunDnsUpdate extends Command
         if (!$dnsRecords) {
             return; // Exit if DNS records can't be loaded
         }
-    
+
         foreach ($rawIps as $row) {
             $ip = $row[0];
-    
+
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
-    
-                $ExisInLog = isset($this->ipLogData[$ip]);
-    
+
+
+                if (isset($this->ipLogData[$ip])) {
+                    continue;
+                }
+
                 // Check if the IP exists in the DNS records
                 $ExistInDNS = false;
                 foreach ($dnsRecords as $record) {
@@ -333,12 +336,13 @@ class RunDnsUpdate extends Command
                         break;
                     }
                 }
-    
-                if (!$ExisInLog && !$ExistInDNS) {
-                    $ExpectedResponse = $this->check_ip_response($ip);
-                    if ($ExpectedResponse) {
-                        $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
-                    }
+                if ($ExistInDNS) {
+                    continue;
+                }
+
+                $ExpectedResponse = $this->check_ip_response($ip);
+                if ($ExpectedResponse) {
+                    $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
                 }
             }
         }
