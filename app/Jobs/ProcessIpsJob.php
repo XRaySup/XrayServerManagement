@@ -35,14 +35,13 @@ class ProcessIpsJob implements ShouldQueue
     {
         try {
             $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
-            sleep(2);
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
-            $result = $command->processIps($this->chunk);
-            //print_r($this->chunk);
+            $command->processIps($this->chunk);
+
             // Calculate progress percentage
             $progress = round(($this->chunkIndex / $this->totalChunks) * 100);
-            log::error("$this->chunkIndex/$this->totalChunks\n");
+
             // Update the progress message on Telegram with retry mechanism
             $maxRetries = 3;
             $retryCount = 0;
@@ -74,7 +73,7 @@ class ProcessIpsJob implements ShouldQueue
             }
         } catch (\Exception $e) {
             \Log::error('Failed to process IPs: ' . $e->getMessage());
-            // Handle error sending message or logging here
+
         }
     }
 }

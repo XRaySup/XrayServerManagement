@@ -28,7 +28,6 @@ class isegarobotController extends Controller
 
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
-            Log::info("Document received.");
             $jobs = [];
             // Send initial message about processing start
             $initialReply = "Your file is being processed. Progress: 0%";
@@ -59,18 +58,15 @@ class isegarobotController extends Controller
                     // Optional: Validate chunk rows before dispatching
                     $chunk = array_values($chunk); // Ensure indices start from 0
 
-                    Log::info("Processing batch $chunkIndex/$totalChunks\n");
-
                     // Dispatch job for the current batch
                     $jobs[] =new ProcessIpsJob($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
 
-
                 }
-                            // Dispatch the jobs in chain
+
             if (!empty($jobs)) {
                 bus::chain($jobs)->dispatch();
             }
-            } catch (TelegramResponseException $e) {
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
             } catch (\Exception $e) {
@@ -94,7 +90,7 @@ class isegarobotController extends Controller
                 'text' => $text,
             ]);
             return $response->getMessageId();
-        } catch (TelegramResponseException $e) {
+        } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
             Log::error('Telegram API error: ' . $e->getMessage());
             return false;
         } catch (\Exception $e) {
