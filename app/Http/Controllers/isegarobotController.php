@@ -59,7 +59,7 @@ foreach ($chunks as $chunkIndex => $chunk) {
     // Optional: Validate chunk rows before dispatching
     $chunk = array_values($chunk); // Ensure indices start from 0
     
-    $this->log("Processing batch $chunkIndex/$totalChunks\n");
+    Log::info("Processing batch $chunkIndex/$totalChunks\n");
     
     // Dispatch job for the current batch
     ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
