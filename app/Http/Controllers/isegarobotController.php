@@ -47,7 +47,7 @@ class isegarobotController extends Controller
     
 // Process file contents as CSV
 $rows = array_map('str_getcsv', explode("\n", $fileContents));
-$totalRows = count($rows);
+//$totalRows = count($rows);
 
 // Split the rows into chunks of 10
 $chunks = array_chunk($rows, 10);
@@ -59,7 +59,7 @@ foreach ($chunks as $chunkIndex => $chunk) {
     // Optional: Validate chunk rows before dispatching
     $chunk = array_values($chunk); // Ensure indices start from 0
     
-    echo ("Processing batch $chunkIndex/$totalChunks\n");
+    $this->log("Processing batch $chunkIndex/$totalChunks\n");
     
     // Dispatch job for the current batch
     ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
