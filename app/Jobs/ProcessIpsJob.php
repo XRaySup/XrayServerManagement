@@ -35,7 +35,7 @@ class ProcessIpsJob implements ShouldQueue
     public function handle()
     {
         try {
-            $telegram = Telegram::bot('mybot');;
+            $telegram = Telegram::bot('mybot');
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
             $command->processIps($this->chunk);

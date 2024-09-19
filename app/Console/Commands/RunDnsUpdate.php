@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use App\Services\CloudflareApiService;
 use Telegram\Bot\Api;
+use Telegram\Bot\Laravel\Facades\Telegram;
 
 class RunDnsUpdate extends Command
 {
@@ -41,7 +42,12 @@ class RunDnsUpdate extends Command
 
     public function handle()
     {
-        
+        $telegram = Telegram::bot('mybot');
+
+        $telegram->sendMessage([
+            'chat_id' => '5598396909',
+            'text' => 'running',
+        ]);
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
