@@ -311,17 +311,30 @@ class RunDnsUpdate extends Command
     }
     public function processIps($rawIps)
     {
-
+        // Load DNS records once
+        $dnsRecords = $this->cloudflare->listDnsRecords();
+        if (!$dnsRecords) {
+            return; // Exit if DNS records can't be loaded
+        }
+    
         foreach ($rawIps as $row) {
-
             $ip = $row[0];
+    
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
-
+    
                 $ExisInLog = isset($this->ipLogData[$ip]);
-                $DNSRecord = $this->cloudflare->getExistingDNSRecord($ip);
-                $ExistInDNS = !$DNSRecord ? False : True;
-                if (!$ExisInLog  && !$ExistInDNS) {
+    
+                // Check if the IP exists in the DNS records
+                $ExistInDNS = false;
+                foreach ($dnsRecords as $record) {
+                    if ($record['content'] === $ip) {
+                        $ExistInDNS = true;
+                        break;
+                    }
+                }
+    
+                if (!$ExisInLog && !$ExistInDNS) {
                     $ExpectedResponse = $this->check_ip_response($ip);
                     if ($ExpectedResponse) {
                         $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
