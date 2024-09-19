@@ -8,8 +8,9 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Console\Commands\RunDnsUpdate;
-use Telegram\Bot\Api;
+//use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Log;
+use Telegram\Bot\Laravel\Facades\Telegram;
 
 class ProcessIpsJob implements ShouldQueue
 {
@@ -34,7 +35,7 @@ class ProcessIpsJob implements ShouldQueue
     public function handle()
     {
         try {
-            $telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+            $telegram = Telegram::bot('mybot');;
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
             $command->processIps($this->chunk);

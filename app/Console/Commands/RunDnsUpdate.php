@@ -6,8 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use App\Services\CloudflareApiService;
-use App\Http\Controllers\isegarobotController;
-
+use Telegram\Bot\Api;
 
 class RunDnsUpdate extends Command
 {
@@ -42,7 +41,7 @@ class RunDnsUpdate extends Command
 
     public function handle()
     {
-
+        
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
