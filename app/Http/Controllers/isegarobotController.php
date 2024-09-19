@@ -52,22 +52,18 @@ class isegarobotController extends Controller
     
                 // Manually process rows in batches of 10
                 $currentIndex = 0;
-                $jobs = [];
-                
                 while ($currentIndex < $totalRows) {
                     $chunk = array_slice($rows, $currentIndex, 10);
                     $chunk = array_values($chunk); // Remove keys from the chunk
                     $chunkIndex = ceil(($currentIndex + 10) / 10);
     
-                    // Create jobs and chain them
-                    $jobs[] = new ProcessIpsJob($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
-                    $currentIndex += 10;
-                }
+                    // Dispatch job for the current batch
+                    ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
     
-                // Dispatch the jobs in chain
-                if (!empty($jobs)) {
-                    $firstJob = array_shift($jobs);
-                    $firstJob->chain($jobs)->dispatch();
+                    $currentIndex += 10;
+    
+                    // Optional: Add a small delay to prevent rate limiting issues
+                    sleep(1);
                 }
     
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
@@ -85,7 +81,6 @@ class isegarobotController extends Controller
     
         return response()->json(['status' => 'ok']);
     }
-    
     
     private function sendReply($chatId, $messageId, $text)
     {
