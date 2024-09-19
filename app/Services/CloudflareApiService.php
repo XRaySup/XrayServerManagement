@@ -80,13 +80,31 @@ class CloudflareApiService
 
     public function listDnsRecords()
     {
-        $response = $this->makeRequest('get', "zones/{$this->zoneId}/dns_records");
-
-        if (!$response['success']) {
-            return null;
-        }
-
-        return $response['result'];
+        $records = [];
+        $page = 1;
+        $perPage = 100;
+    
+        do {
+            // Make the request with pagination
+            $response = $this->makeRequest('get', "zones/{$this->zoneId}/dns_records", [
+                'page' => $page,
+                'per_page' => $perPage
+            ]);
+    
+            if (!$response['success']) {
+                return null;
+            }
+    
+            // Merge the result from the current page into the records array
+            $records = array_merge($records, $response['result']);
+    
+            // Check the result_info to determine if there are more pages
+            $totalPages = $response['result_info']['total_pages'];
+            $page++;
+            
+        } while ($page <= $totalPages);
+    
+        return $records;
     }
     public function getExistingDNSRecord($ip)
     {

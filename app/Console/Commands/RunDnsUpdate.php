@@ -42,6 +42,7 @@ class RunDnsUpdate extends Command
 
     public function handle()
     {
+        $validIps = 0;
         $telegram = Telegram::bot('mybot');
 
         $telegram->sendMessage([
@@ -63,7 +64,7 @@ class RunDnsUpdate extends Command
         //isegarobotController::replyIps($ipResults, '');
         // Fetch DNS records from Cloudflare API
         $dnsRecords = $this->cloudflare->listDnsRecords();
-
+        $totalDNS = count($dnsRecords);
         if ($dnsRecords === false) {
             $this->logAndError("Failed to get DNS records. Exiting.");
             exit(1);
@@ -141,6 +142,7 @@ class RunDnsUpdate extends Command
                 }
             } else {
                 // Response is as expected, rename the DNS record back to normal
+                $validIps += 1;
                 if (strpos($name, 'deleted.') === 0) {
                     $name = str_replace('deleted.', '', $name);
                     $this->cloudflare->updateDnsRecord($id, $name, $ip);
@@ -186,6 +188,10 @@ class RunDnsUpdate extends Command
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
+        $telegram->sendMessage([
+            'chat_id' => '5598396909',
+            'text' => "$validIps valid IPs are available. Total records are $totalDNS.",
+        ]);
     }
     private function LoadIpLogData()
     {
