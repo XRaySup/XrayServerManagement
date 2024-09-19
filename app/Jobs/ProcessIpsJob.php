@@ -42,7 +42,7 @@ class ProcessIpsJob implements ShouldQueue
             //print_r($this->chunk);
             // Calculate progress percentage
             $progress = round(($this->chunkIndex / $this->totalChunks) * 100);
-
+            echo ("$this->chunkIndex/$this->totalChunks");
             // Update the progress message on Telegram with retry mechanism
             $maxRetries = 3;
             $retryCount = 0;
@@ -53,7 +53,7 @@ class ProcessIpsJob implements ShouldQueue
                     $telegram->editMessageText([
                         'chat_id' => $this->chatId,
                         'message_id' => $this->progressMessageId,
-                        'text' => "Your file is being processed. Progress: {$progress}%",
+                        'text' => "Your file is being processed. Progress: {$progress}%  $this->chunkIndex/$this->totalChunks",
                     ]);
                     $success = true; // If the request is successful, exit the loop
                 } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
