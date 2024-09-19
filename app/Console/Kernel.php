@@ -17,6 +17,10 @@ class Kernel extends ConsoleKernel
         $schedule->call('updateServers')->everyThirtyMinutes();
         // Schedule the RunDnsUpdate command to run every 30 minutes
         $schedule->command('dns:update')->everyThirtyMinutes();
+        
+        $schedule->command('queue:work --sleep=3 --tries=3')
+        ->withoutOverlapping()
+        ->everyMinute();
     }
 
     /**
