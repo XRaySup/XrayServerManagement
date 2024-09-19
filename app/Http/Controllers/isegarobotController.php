@@ -10,6 +10,7 @@ use Telegram\Bot\Exceptions\TelegramResponseException;
 use App\Jobs\ProcessIpsJob;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Bus;
 
 class isegarobotController extends Controller
 {
@@ -25,49 +26,52 @@ class isegarobotController extends Controller
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
-    
+
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
             Log::info("Document received.");
-            
+            $jobs = [];
             // Send initial message about processing start
             $initialReply = "Your file is being processed. Progress: 0%";
             $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
-    
+
             if (!$progressMessageId) {
                 return response()->json(['status' => 'error', 'message' => 'Failed to send initial reply'], 500);
             }
-    
+
             try {
                 // Download the file from Telegram
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
                 $filePath = $file->getFilePath();
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
                 $fileContents = Http::get($fileUrl)->body();
-    
-// Process file contents as CSV
-$rows = array_map('str_getcsv', explode("\n", $fileContents));
-//$totalRows = count($rows);
 
-// Split the rows into chunks of 10
-$chunks = array_chunk($rows, 10);
-$totalChunks = count($chunks);
+                // Process file contents as CSV
+                $rows = array_map('str_getcsv', explode("\n", $fileContents));
+                //$totalRows = count($rows);
 
-foreach ($chunks as $chunkIndex => $chunk) {
-    $chunkIndex++; // Adjust for human-readable 1-based indexing
-    
-    // Optional: Validate chunk rows before dispatching
-    $chunk = array_values($chunk); // Ensure indices start from 0
-    
-    Log::info("Processing batch $chunkIndex/$totalChunks\n");
-    
-    // Dispatch job for the current batch
-    ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
-    
-    // Optional: Dynamic delay or backoff strategy
-    // sleep(1);
-}
-    
+                // Split the rows into chunks of 10
+                $chunks = array_chunk($rows, 10);
+                $totalChunks = count($chunks);
+
+                foreach ($chunks as $chunkIndex => $chunk) {
+                    $chunkIndex++; // Adjust for human-readable 1-based indexing
+
+                    // Optional: Validate chunk rows before dispatching
+                    $chunk = array_values($chunk); // Ensure indices start from 0
+
+                    Log::info("Processing batch $chunkIndex/$totalChunks\n");
+
+                    // Dispatch job for the current batch
+                    $jobs[] =new ProcessIpsJob($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
+
+                    // Optional: Dynamic delay or backoff strategy
+                    // sleep(1);
+                }
+                            // Dispatch the jobs in chain
+            if (!empty($jobs)) {
+                bus::chain($jobs)->dispatch();
+            }
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
@@ -75,15 +79,14 @@ foreach ($chunks as $chunkIndex => $chunk) {
                 Log::error('General error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
             }
-    
         } else {
             // Notify the user that no file was received
             $this->sendReply($chatId, $messageId, "No file received.");
         }
-    
+
         return response()->json(['status' => 'ok']);
     }
-    
+
     private function sendReply($chatId, $messageId, $text)
     {
         try {
@@ -101,8 +104,4 @@ foreach ($chunks as $chunkIndex => $chunk) {
             return false;
         }
     }
-    
-
-
- 
 }
