@@ -26,14 +26,14 @@ class RunDnsUpdate extends Command
     public function __construct()
     {
         parent::__construct();
-    
+
         $this->zoneId = env('CLOUDFLARE_ZONE_ID');
         $this->apiToken = env('CLOUDFLARE_API_TOKEN');
         $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_DOMAIN');
         $this->logFile = base_path('storage/logs/dns_update.log');
 
         $this->cloudflare = new CloudflareApiService(env('CLOUDFLARE_DOMAIN'));
- 
+
         $this->ipLog = base_path('storage/logs/' . $this->subdomainPattern . '.csv');
 
         $this->ipLogData = $this->loadIpLogData();
@@ -53,7 +53,7 @@ class RunDnsUpdate extends Command
         $ips = $this->readCSVFromGoogleDrive('ip.csv');
 
         Storage::disk('google')->put('DNSUpdate/ip.csv', '', ['visibility' => 'public']);
-        $ipResults = $this->processIps($ips );
+        $ipResults = $this->processIps($ips);
 
         //isegarobotController::replyIps($ipResults, '');
         // Fetch DNS records from Cloudflare API
@@ -74,7 +74,7 @@ class RunDnsUpdate extends Command
             $proxied = $record['proxied'] ? 'true' : 'false';
             $this->logAndInfo("Processing record: Name='$name', IP='$ip', Proxied=$proxied");
 
-            
+
             // Skip records that do not match the subdomain pattern
             if (strpos($name, $this->subdomainPattern) === false) {
                 $this->logAndInfo("Skipping record: Name='$name' does not match the pattern.");
@@ -109,10 +109,10 @@ class RunDnsUpdate extends Command
             // Check the response from the IP address
             $this->logAndInfo("Checking IP address: '$ip'");
             $ExpectedResponse  = $this->check_ip_response($ip);
-            
+
             //$response2 = $this->check_ip_response2($ip);
 
-            $this->logAndInfo("Expected Response: ". ($ExpectedResponse ? 'True' : 'False'));
+            $this->logAndInfo("Expected Response: " . ($ExpectedResponse ? 'True' : 'False'));
 
             // Check and update unexpected response count
             if ($ExpectedResponse === false) {
@@ -276,7 +276,7 @@ class RunDnsUpdate extends Command
 
         return $rows;
     }
- 
+
     private function logAndInfo($message)
     {
         // Log message to terminal and log file
@@ -311,31 +311,24 @@ class RunDnsUpdate extends Command
     }
     public function processIps($rawIps)
     {
-        $Ips = [];
+
         foreach ($rawIps as $row) {
-            
+
             $ip = $row[0];
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                $ExpectedResponse = $this->check_ip_response($ip);
+
                 $ExisInLog = isset($this->ipLogData[$ip]);
                 $DNSRecord = $this->cloudflare->getExistingDNSRecord($ip);
-                
                 $ExistInDNS = !$DNSRecord ? False : True;
-
-                $Ips[] = [
-                    'ip' => $ip,
-                    'ExpectedResponse' => $ExpectedResponse,
-                    'ExisInLog' => $ExisInLog,
-                    'ExistInDNS' => $ExistInDNS,
-                ];
-                //$this->logAndInfo("'$ip' Expected Response: '" . ($ExpectedResponse ? 'True' : 'False') . "', Exist in Log: '" . ($ExisInLog ? 'True' : 'False'). "', Exist in DNS: " . ($ExistInDNS ? 'True' : 'False'));
-                if($ExpectedResponse && !$ExisInLog && !$ExistInDNS){
-                    $this->cloudflare->addDNSRecord($this->subdomainPattern,$ip);
+                if (!$ExisInLog  && !$ExistInDNS) {
+                    $ExpectedResponse = $this->check_ip_response($ip);
+                    if ($ExpectedResponse) {
+                        $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
+                    }
                 }
             }
         }
-        return $Ips;
-
+        return;
     }
 }
