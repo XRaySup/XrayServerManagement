@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Http;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Telegram\Bot\Exceptions\TelegramResponseException;
 use App\Jobs\ProcessIpsJob;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Bus;
 
@@ -65,14 +64,13 @@ class isegarobotController extends Controller
                     // Dispatch job for the current batch
                     $jobs[] =new ProcessIpsJob($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
 
-                    // Optional: Dynamic delay or backoff strategy
-                    // sleep(1);
+
                 }
                             // Dispatch the jobs in chain
             if (!empty($jobs)) {
                 bus::chain($jobs)->dispatch();
             }
-            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+            } catch (TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
             } catch (\Exception $e) {
@@ -96,7 +94,7 @@ class isegarobotController extends Controller
                 'text' => $text,
             ]);
             return $response->getMessageId();
-        } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+        } catch (TelegramResponseException $e) {
             Log::error('Telegram API error: ' . $e->getMessage());
             return false;
         } catch (\Exception $e) {
