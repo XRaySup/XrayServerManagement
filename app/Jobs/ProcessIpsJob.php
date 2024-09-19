@@ -42,7 +42,7 @@ class ProcessIpsJob implements ShouldQueue
             //print_r($this->chunk);
             // Calculate progress percentage
             $progress = round(($this->chunkIndex / $this->totalChunks) * 100);
-            echo ("$this->chunkIndex/$this->totalChunks\n");
+            log::error("$this->chunkIndex/$this->totalChunks\n");
             // Update the progress message on Telegram with retry mechanism
             $maxRetries = 3;
             $retryCount = 0;
