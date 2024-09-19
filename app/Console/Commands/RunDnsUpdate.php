@@ -11,6 +11,7 @@ use Telegram\Bot\Laravel\Facades\Telegram;
 
 class RunDnsUpdate extends Command
 {
+    public $timeout = 0;
     protected $signature = 'dns:update';
     protected $description = 'Run the DNS update script';
 
