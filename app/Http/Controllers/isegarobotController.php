@@ -45,26 +45,28 @@ class isegarobotController extends Controller
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
                 $fileContents = Http::get($fileUrl)->body();
     
-                // Process file contents as CSV
-                $rows = array_map('str_getcsv', explode("\n", $fileContents));
-                $totalRows = count($rows);
-                $totalChunks = ceil($totalRows / 10);
+// Process file contents as CSV
+$rows = array_map('str_getcsv', explode("\n", $fileContents));
+$totalRows = count($rows);
+
+// Split the rows into chunks of 10
+$chunks = array_chunk($rows, 10);
+$totalChunks = count($chunks);
+
+foreach ($chunks as $chunkIndex => $chunk) {
+    $chunkIndex++; // Adjust for human-readable 1-based indexing
     
-                // Manually process rows in batches of 10
-                $currentIndex = 0;
-                while ($currentIndex < $totalRows) {
-                    $chunk = array_slice($rows, $currentIndex, 10);
-                    $chunk = array_values($chunk); // Remove keys from the chunk
-                    $chunkIndex = ceil(($currentIndex + 10) / 10);
-                    echo ("$chunkIndex/$totalChunks\n");
-                    // Dispatch job for the current batch
-                    ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
+    // Optional: Validate chunk rows before dispatching
+    $chunk = array_values($chunk); // Ensure indices start from 0
     
-                    $currentIndex += 10;
+    echo ("Processing batch $chunkIndex/$totalChunks\n");
     
-                    // Optional: Add a small delay to prevent rate limiting issues
-                    sleep(1);
-                }
+    // Dispatch job for the current batch
+    ProcessIpsJob::dispatch($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
+    
+    // Optional: Dynamic delay or backoff strategy
+    // sleep(1);
+}
     
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
