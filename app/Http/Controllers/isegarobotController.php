@@ -10,6 +10,8 @@ use Telegram\Bot\Exceptions\TelegramResponseException;
 use App\Jobs\ProcessIpsJob;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Artisan;
+
 
 class isegarobotController extends Controller
 {
@@ -75,7 +77,11 @@ class isegarobotController extends Controller
             }
         } else {
             // Notify the user that no file was received
-            $this->sendReply($chatId, $messageId, "No file received.");
+            if($message='Run'){
+                Artisan::queue('dns:update');
+            }else{
+                $this->sendReply($chatId, $messageId, "No file received.");
+            }            
         }
 
         return response()->json(['status' => 'ok']);
