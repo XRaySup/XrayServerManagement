@@ -28,7 +28,8 @@ class isegarobotController extends Controller
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
         if($chatId !==env('TELEGRAM_ADMIN_ID')){
-            return
+
+            return;
         }
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
