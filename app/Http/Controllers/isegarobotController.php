@@ -28,8 +28,11 @@ class isegarobotController extends Controller
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
         
+        // Cast the TELEGRAM_ADMIN_ID from .env to an integer
+        $adminId = (int) env('TELEGRAM_ADMIN_ID');
+        
         // Check if the user is not an admin
-        if ($chatId !== env('TELEGRAM_ADMIN_ID')) {
+        if ((int)$chatId !== $adminId) {
             $initialReply = "not admin?";
             $this->sendReply($chatId, $messageId, $initialReply);
             
@@ -42,7 +45,6 @@ class isegarobotController extends Controller
         $this->sendReply($chatId, $messageId, $initialReply);
         
         // Return response after admin check
-        return response()->json(['status' => 'ok']);
         return response()->json(['status' => 'ok']);
         if (isset($message['document'])) {
 
