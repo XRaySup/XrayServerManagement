@@ -16,7 +16,7 @@ class ServersUsage extends BaseWidget
     protected int | string | array $columnSpan = "full";
     public function table(Table $table): Table
     {
-
+        ini_set('max_execution_time', 120);
         $servers = Server::all();
         $totalTodayUsage = 0;
         $totalYesterdayUsage = 0;
