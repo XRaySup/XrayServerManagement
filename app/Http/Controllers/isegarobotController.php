@@ -29,7 +29,7 @@ class isegarobotController extends Controller
         $messageId = $message['message_id'];
         if($chatId !==env('TELEGRAM_ADMIN_ID')){
 
-            return;
+            return response()->json(['status' => 'ok']);
         }
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
