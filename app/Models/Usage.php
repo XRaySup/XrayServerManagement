@@ -11,6 +11,8 @@ class Usage extends Model
     protected $fillable = ['server_id','inbound_id','client_id','up','down','upIncrease','downIncrease', 'timestamps'];
     public static function cleanUpAllRecords()
     {
+        \DB::statement('PRAGMA busy_timeout = 60000'); // Allow more time for locking
+    
         $deletedCount = 0;
     
         $records = self::select('server_id', 'inbound_id', 'client_id', \DB::raw('DATE(created_at) as date'), \DB::raw('MAX(created_at) as max_created_at'))
@@ -18,7 +20,7 @@ class Usage extends Model
             ->get();
     
         foreach ($records as $record) {
-            // Delete older duplicates for the same day
+            // Fetch duplicates
             $duplicates = self::where('server_id', $record->server_id)
                 ->where('inbound_id', $record->inbound_id)
                 ->where('client_id', $record->client_id)
@@ -27,11 +29,15 @@ class Usage extends Model
                 ->get();
     
             foreach ($duplicates as $duplicate) {
-                $duplicate->delete(); // Delete each duplicate individually
-                $deletedCount++;
+                try {
+                    $duplicate->delete(); // Delete each duplicate
+                    $deletedCount++;
+                    echo "Deleted record ID: {$duplicate->id}\n"; // Print deleted record ID
+                    sleep(1); // Introduce a slight delay
+                } catch (\Exception $e) {
+                    echo "Error deleting record ID: {$duplicate->id}, Error: {$e->getMessage()}\n";
+                }
             }
-            
-            echo "Deleted $deletedCount records so far...\n"; // Print out progress
         }
     
         return $deletedCount;
