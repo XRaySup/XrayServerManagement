@@ -47,7 +47,7 @@ class RunDnsUpdate extends Command
         $telegram = Telegram::bot('mybot');
 
         $telegram->sendMessage([
-            'chat_id' => '5598396909',
+            'chat_id' => env('TELEGRAM_ADMIN_ID'),
             'text' => 'running',
         ]);
         // Ensure the log file exists
