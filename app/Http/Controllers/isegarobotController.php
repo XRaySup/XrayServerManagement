@@ -27,16 +27,22 @@ class isegarobotController extends Controller
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
-        $initialReply = env('TELEGRAM_ADMIN_ID')."/".$chatId;
-        $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
-        return response()->json(['status' => 'ok']);
+        
+        // Check if the user is not an admin
         if ($chatId !== env('TELEGRAM_ADMIN_ID')) {
             $initialReply = "not admin?";
-            $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
+            $this->sendReply($chatId, $messageId, $initialReply);
+            
+            // Return response after non-admin check
             return response()->json(['status' => 'ok']);
         }
+        
+        // If user is admin, proceed to reply
         $initialReply = "hi admin";
-        $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
+        $this->sendReply($chatId, $messageId, $initialReply);
+        
+        // Return response after admin check
+        return response()->json(['status' => 'ok']);
         return response()->json(['status' => 'ok']);
         if (isset($message['document'])) {
 
