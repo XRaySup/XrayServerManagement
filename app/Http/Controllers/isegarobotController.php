@@ -33,19 +33,16 @@ class isegarobotController extends Controller
         
         // Check if the user is not an admin
         if ((int)$chatId !== $adminId) {
-            $initialReply = "not admin?";
-            $this->sendReply($chatId, $messageId, $initialReply);
+            ;
+            $this->sendReply($chatId, $messageId, "not admin?");
             
             // Return response after non-admin check
             return response()->json(['status' => 'ok']);
         }
         
         // If user is admin, proceed to reply
-        $initialReply = "hi admin";
-        $this->sendReply($chatId, $messageId, $initialReply);
-        
-        // Return response after admin check
-        return response()->json(['status' => 'ok']);
+
+
         if (isset($message['document'])) {
 
             $fileId = $message['document']['file_id'];
