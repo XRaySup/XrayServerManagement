@@ -77,7 +77,7 @@ class isegarobotController extends Controller
             }
         } else {
             // Notify the user that no file was received
-            if($message='Run'){
+            if($message['text']='Run'){
                 $this->sendReply($chatId, $messageId, "start running.");
                 Artisan::queue('dns:update');
                 $this->sendReply($chatId, $messageId, "running in background.");
