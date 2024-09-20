@@ -57,7 +57,6 @@ class ServersUsage extends BaseWidget
                 SelectFilter::make('status')
                     ->options(Server::stats())
                     ->default('ONLINE')
-            ]);
-            
+            ]);   
     }
 }
