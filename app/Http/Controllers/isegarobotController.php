@@ -35,7 +35,11 @@ class isegarobotController extends Controller
             $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
             return response()->json(['status' => 'ok']);
         }
+        $initialReply = "hi admin";
+        $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
+        return response()->json(['status' => 'ok']);
         if (isset($message['document'])) {
+
             $fileId = $message['document']['file_id'];
             $jobs = [];
             // Send initial message about processing start
