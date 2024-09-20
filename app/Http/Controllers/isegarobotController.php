@@ -27,7 +27,12 @@ class isegarobotController extends Controller
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
+        $initialReply = "check?";
+        $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
+        return response()->json(['status' => 'ok']);
         if ($chatId !== env('TELEGRAM_ADMIN_ID')) {
+            $initialReply = "not admin?";
+            $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
             return response()->json(['status' => 'ok']);
         }
         if (isset($message['document'])) {
