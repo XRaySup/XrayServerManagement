@@ -58,5 +58,6 @@ class ServersUsage extends BaseWidget
                     ->options(Server::stats())
                     ->default('ONLINE')
             ]);
+            
     }
 }
