@@ -477,7 +477,7 @@ class RunDnsUpdate extends Command
 
         // Check the IP responses
         $ipResults = $this->check_ip_responses($ipsToCheck);
-
+        $this->logAndInfo(json_encode($ipsToCheck));
         foreach ($ipsToCheck as $ip) {
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
