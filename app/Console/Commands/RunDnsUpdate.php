@@ -304,51 +304,51 @@ class RunDnsUpdate extends Command
         return $ipLogData;
     }
 
-    private function check_ip_response($ipAddress)
-    {
-        $ch = curl_init();
+    // private function check_ip_response($ipAddress)
+    // {
+    //     $ch = curl_init();
 
-        // Set the IP address with port 443
-        curl_setopt($ch, CURLOPT_URL, "http://$ipAddress");
-        curl_setopt($ch, CURLOPT_PORT, 443); // Ensure it's HTTPS port 443
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
-        curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1); // Connection timeout
-        curl_setopt($ch, CURLOPT_TIMEOUT, 1); // Total timeout
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
+    //     // Set the IP address with port 443
+    //     curl_setopt($ch, CURLOPT_URL, "http://$ipAddress");
+    //     curl_setopt($ch, CURLOPT_PORT, 443); // Ensure it's HTTPS port 443
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //     curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
+    //     curl_setopt($ch, CURLOPT_NOBODY, true); // Only fetch the headers
+    //     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1); // Connection timeout
+    //     curl_setopt($ch, CURLOPT_TIMEOUT, 1); // Total timeout
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for IPs
 
-        // Execute the cURL request
-        $response = curl_exec($ch);
-        // Handle cURL errors
-        if (curl_errno($ch)) {
-            $error = curl_error($ch);
-            echo $error;
-            echo "IP did not respond or error occurred.\n";
-            curl_close($ch);
-            return false;
-        }
-        // Handle cURL errors
-        // Get the HTTP status code
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    //     // Execute the cURL request
+    //     $response = curl_exec($ch);
+    //     // Handle cURL errors
+    //     if (curl_errno($ch)) {
+    //         $error = curl_error($ch);
+    //         echo $error;
+    //         echo "IP did not respond or error occurred.\n";
+    //         curl_close($ch);
+    //         return false;
+    //     }
+    //     // Handle cURL errors
+    //     // Get the HTTP status code
+    //     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        // Get the headers from the response
-        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $headers = substr($response, 0, $headerSize);
+    //     // Get the headers from the response
+    //     $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    //     $headers = substr($response, 0, $headerSize);
 
-        // Check for Cloudflare and HTTP 400 Bad Request
-        if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
-            $response = 'Cloudflare server detected with 400 Bad Request';
-            echo $response . "\n";
-            curl_close($ch);
-            return true;
-        } else {
-            $response = 'Not a Cloudflare server or not 400 Bad Request';
-            echo $response . "\n";
-            curl_close($ch);
-            return false;
-        }
-    }
+    //     // Check for Cloudflare and HTTP 400 Bad Request
+    //     if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
+    //         $response = 'Cloudflare server detected with 400 Bad Request';
+    //         echo $response . "\n";
+    //         curl_close($ch);
+    //         return true;
+    //     } else {
+    //         $response = 'Not a Cloudflare server or not 400 Bad Request';
+    //         echo $response . "\n";
+    //         curl_close($ch);
+    //         return false;
+    //     }
+    // }
 
 
     private function readCSVFromGoogleDrive($filename)
@@ -411,9 +411,9 @@ class RunDnsUpdate extends Command
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
 
 
-                if (isset($this->ipLogData[$ip])) {
-                    continue;
-                }
+                // if (isset($this->ipLogData[$ip])) {
+                //     continue;
+                // }
 
                 // Check if the IP exists in the DNS records
                 $ExistInDNS = false;
