@@ -33,10 +33,13 @@ class isegarobotController extends Controller
         $adminIds = explode(',', env('TELEGRAM_ADMIN_IDS'));
         // Loop through admin IDs to send the message to each admin
         foreach ($adminIds as $adminId) {
-            $this->sendReply($chatId, $messageId, "not admin?");
+            // Check if the user is not an admin
+            if ((int)$chatId !== $adminId) {;
+                $this->sendReply($chatId, $messageId, "not admin?");
 
-            // Return response after non-admin check
-            return response()->json(['status' => 'ok']);
+                // Return response after non-admin check
+                return response()->json(['status' => 'ok']);
+            }
         }
 
 
