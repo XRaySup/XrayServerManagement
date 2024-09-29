@@ -74,13 +74,12 @@ class RunDnsUpdate extends Command
         if ($fileResponse !== null) {
 
             $progressMessageText .= "\nProcessing ip.csv :\n" . $fileResponse['message'];
-        }else{
+        } else {
             $progressMessageText .= "\nip.csv was empty";
         }
         foreach ($progressMessages as $progressMessage) {
-            
-            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
 
+            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
         }
         //return;
 
@@ -116,7 +115,7 @@ class RunDnsUpdate extends Command
                 $this->logAndInfo("Skipping record: Name='$name' does not match the pattern.");
                 continue;
             }
-            $totalDNS ++;
+            $totalDNS++;
             // Check if proxy is turned off
             if ($proxied === 'true') {
                 $this->logAndInfo("Proxy is currently on for record: Name='$name', IP='$ip'. Turning it off...");
@@ -221,9 +220,8 @@ class RunDnsUpdate extends Command
         $progressMessageText .= "\n$validIps valid IPs are available. Total records are $totalDNS.";
 
         foreach ($progressMessages as $progressMessage) {
-            
-            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
 
+            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
         }
     }
     private function check_ip_responses(array $ipAddresses)
@@ -458,7 +456,7 @@ class RunDnsUpdate extends Command
 
     public function processFileContent($filecontent)
     {
-        $rows = array_map('str_getcsv', explode("\n", $filecontent));
+
         $CountDNSExist = 0;
         $CountExpectedResponse = 0;
         $countIps = 0;
@@ -473,8 +471,11 @@ class RunDnsUpdate extends Command
                 'message' => 'Could not connect to Cloudflare'
             ];
         }
+        // Read the file content into an array of IPs
+        $rows = array_map('trim', explode("\n", $filecontent)); // Use trim to remove any whitespace
+        $ipsToCheck = array_filter($rows); // Remove any empty lines
 
-        $ipsToCheck = array_column($rows, 0);
+        // Check the IP responses
         $ipResults = $this->check_ip_responses($ipsToCheck);
 
         foreach ($ipsToCheck as $ip) {
@@ -533,16 +534,17 @@ class RunDnsUpdate extends Command
             ]
         ];
     }
-    Public function updateTelegramMessageWithRetry($message, $text, $maxRetries = 3) {
+    public function updateTelegramMessageWithRetry($message, $text, $maxRetries = 3)
+    {
         $telegram = Telegram::bot('mybot'); // Initialize the Telegram bot
-    
+
         // Extract chat ID and message ID from the message object
         $chatId = $message->getChat()->getId();
         $messageId = $message->getMessageId();
-    
+
         $retryCount = 0;
         $success = false;
-    
+
         while (!$success && $retryCount < $maxRetries) {
             try {
                 // Update the message using the Telegram API
@@ -555,7 +557,7 @@ class RunDnsUpdate extends Command
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 $retryCount++;
                 $this->logAndError("Telegram API error while updating message (attempt $retryCount): " . $e->getMessage());
-    
+
                 // Retry if it's a rate limit error or a recoverable error
                 if ($e->getCode() == 429 || $retryCount < $maxRetries) {
                     sleep(1); // Wait before retrying
@@ -564,11 +566,11 @@ class RunDnsUpdate extends Command
                 }
             }
         }
-    
+
         if (!$success) {
             $this->logAndError("Failed to update message on Telegram after {$maxRetries} attempts.");
         }
-    
+
         return $success;
     }
 }
