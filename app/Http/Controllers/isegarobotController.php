@@ -27,19 +27,19 @@ class isegarobotController extends Controller
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
-        
+
         // Cast the TELEGRAM_ADMIN_ID from .env to an integer
-        $adminId = (int) env('TELEGRAM_ADMIN_ID');
-        
-        // Check if the user is not an admin
-        if ((int)$chatId !== $adminId) {
-            ;
+
+        $adminIds = explode(',', env('TELEGRAM_ADMIN_IDS'));
+        // Loop through admin IDs to send the message to each admin
+        foreach ($adminIds as $adminId) {
             $this->sendReply($chatId, $messageId, "not admin?");
-            
+
             // Return response after non-admin check
             return response()->json(['status' => 'ok']);
         }
-        
+
+
         // If user is admin, proceed to reply
 
 
@@ -77,13 +77,12 @@ class isegarobotController extends Controller
                     $chunk = array_values($chunk); // Ensure indices start from 0
 
                     // Dispatch job for the current batch
-                    $jobs[] =new ProcessIpsJob($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
-
+                    $jobs[] = new ProcessIpsJob($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
                 }
 
-            if (!empty($jobs)) {
-                bus::chain($jobs)->dispatch();
-            }
+                if (!empty($jobs)) {
+                    bus::chain($jobs)->dispatch();
+                }
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
@@ -93,11 +92,11 @@ class isegarobotController extends Controller
             }
         } else {
             // Notify the user that no file was received
-            if($message['text']==='Run'){
+            if ($message['text'] === 'Run') {
                 Artisan::queue('dns:update');
-            }else{
+            } else {
                 $this->sendReply($chatId, $messageId, "No file received.");
-            }            
+            }
         }
 
         return response()->json(['status' => 'ok']);

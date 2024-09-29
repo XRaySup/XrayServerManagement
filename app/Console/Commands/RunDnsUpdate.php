@@ -45,11 +45,16 @@ class RunDnsUpdate extends Command
     {
         $validIps = 0;
         $telegram = Telegram::bot('mybot');
+        $adminIds = explode(',', env('TELEGRAM_ADMIN_IDS'));
+        
+        foreach ($adminIds as $adminId) {
 
-        $telegram->sendMessage([
-            'chat_id' => env('TELEGRAM_ADMIN_ID'),
-            'text' => 'running',
-        ]);
+            $telegram->sendMessage([
+                'chat_id' => trim($adminId),  // Use trim() to remove any extra spaces
+                'text' => 'running',
+            ]);
+        }
+
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
@@ -189,10 +194,13 @@ class RunDnsUpdate extends Command
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
-        $telegram->sendMessage([
-            'chat_id' => '5598396909',
-            'text' => "$validIps valid IPs are available. Total records are $totalDNS.",
-        ]);
+        foreach ($adminIds as $adminId) {
+
+            $telegram->sendMessage([
+                'chat_id' => trim($adminId),  // Use trim() to remove any extra spaces
+                'text' => "$validIps valid IPs are available. Total records are $totalDNS.",
+            ]);
+        }
     }
     private function LoadIpLogData()
     {
