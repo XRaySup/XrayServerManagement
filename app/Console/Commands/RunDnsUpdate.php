@@ -250,10 +250,10 @@ class RunDnsUpdate extends Command
                 $headers = substr($response, 0, $headerSize);
 
                 if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
-                    $this->info("Cloudflare server detected with 400 Bad Request for IP $ipAddress");
+                    //$this->info("Cloudflare server detected with 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = true;
                 } else {
-                    $this->info("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
+                    //$this->info("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = false;
                 }
             }
