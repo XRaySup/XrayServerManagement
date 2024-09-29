@@ -474,10 +474,10 @@ class RunDnsUpdate extends Command
         // Read the file content into an array of IPs
         $rows = array_map('trim', explode("\n", $filecontent)); // Use trim to remove any whitespace
         $ipsToCheck = array_filter($rows); // Remove any empty lines
-
+        $this->logAndInfo(json_encode($ipsToCheck));
         // Check the IP responses
         $ipResults = $this->check_ip_responses($ipsToCheck);
-        $this->logAndInfo(json_encode($ipsToCheck));
+
         foreach ($ipsToCheck as $ip) {
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
