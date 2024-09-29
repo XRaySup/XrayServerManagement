@@ -18,18 +18,16 @@ class ProcessIpsJob implements ShouldQueue
 
     public $timeout = 900; // Set timeout to 15 minutes
     protected $chatId;
-    protected $chunk;
-    protected $progressMessageId;
-    protected $chunkIndex;
-    protected $totalChunks;
+    protected $fileContet;
+    protected $progressMessage;
 
-    public function __construct($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks)
+
+    public function __construct($fileContet, $chatId, $progressMessage)
     {
-        $this->chunk = $chunk;
+        $this->fileContet = $fileContet;
         $this->chatId = $chatId;
-        $this->progressMessageId = $progressMessageId;
-        $this->chunkIndex = $chunkIndex;
-        $this->totalChunks = $totalChunks;
+        $this->progressMessage = $progressMessage;
+
     }
 
     public function handle()
@@ -38,40 +36,20 @@ class ProcessIpsJob implements ShouldQueue
             $telegram = Telegram::bot('mybot');
             // Instantiate the RunDnsUpdate command and process IPs
             $command = app(RunDnsUpdate::class);
-            $command->processIps($this->chunk);
+            $fileResponse = $command->processFileContent($this->fileContet);
+            $progressMessageText = '';
+            if ($fileResponse !== null) {
 
-            // Calculate progress percentage
-            $progress = round(($this->chunkIndex / $this->totalChunks) * 100);
-
-            // Update the progress message on Telegram with retry mechanism
-            $maxRetries = 3;
-            $retryCount = 0;
-            $success = false;
-
-            while (!$success && $retryCount < $maxRetries) {
-                try {
-                    $telegram->editMessageText([
-                        'chat_id' => $this->chatId,
-                        'message_id' => $this->progressMessageId,
-                        'text' => "Your file is being processed. Progress: {$progress}%  $this->chunkIndex/$this->totalChunks",
-                    ]);
-                    $success = true; // If the request is successful, exit the loop
-                } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
-                    $retryCount++;
-                    Log::error("Telegram API error while updating progress (attempt $retryCount): " . $e->getMessage());
-
-                    // Check if we should retry based on a rate limit error or other recoverable error
-                    if ($e->getCode() == 429 || $retryCount < $maxRetries) {
-                        sleep(1); // Wait for 1 second before retrying
-                    } else {
-                        break; // Exit the loop if it's a different error or max retries reached
-                    }
-                }
+                $progressMessageText .= "\nProcessing file :\n" . $fileResponse['message'];
+            }else{
+                $progressMessageText .= "\nFile was empty!";
             }
 
-            if (!$success) {
-                Log::error("Failed to update progress on Telegram after {$maxRetries} attempts.");
-            }
+                
+                $command->updateTelegramMessageWithRetry($this->progressMessage, $progressMessageText);
+    
+
+ 
         } catch (\Exception $e) {
             \Log::error('Failed to process IPs: ' . $e->getMessage());
 

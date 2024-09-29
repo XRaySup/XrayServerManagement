@@ -27,62 +27,50 @@ class isegarobotController extends Controller
         $message = $request->input('message');
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
-
-        // Cast the TELEGRAM_ADMIN_ID from .env to an integer
-
+        $userName = $message['from']['username'] ?? 'Unknown';
+        $firstName = $message['from']['first_name'] ?? 'Unknown';
+        $lastName = $message['from']['last_name'] ?? 'Unknown';
+    
         $adminIds = explode(',', env('TELEGRAM_ADMIN_IDS'));
-
+    
         if (!in_array((int)$chatId, $adminIds)) {
-                $this->sendReply($chatId, $messageId, "not admin?");
-
-                // Return response after non-admin check
-                return response()->json(['status' => 'ok']);
+            // Notify admins about the unauthorized attempt
+            foreach ($adminIds as $adminId) {
+                $this->sendReply(trim($adminId), null, "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName");
+            }
+    
+            // Send message to the non-admin user
+            $this->sendReply($chatId, $messageId, "You are not authorized to use this bot.");
+            
+            // Return response after non-admin check
+            return response()->json(['status' => 'ok']);
         }
-
-
-        // If user is admin, proceed to reply
-
-
+    
+        // Continue if the user is an admin
         if (isset($message['document'])) {
-
             $fileId = $message['document']['file_id'];
-            $jobs = [];
+    
             // Send initial message about processing start
-            $initialReply = "Your file is being processed. Progress: 0%";
-            $progressMessageId = $this->sendReply($chatId, $messageId, $initialReply);
-
-            if (!$progressMessageId) {
+            $initialReply = "Your file is being processed.";
+            $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
+    
+            if (!$progressMessage) {
                 return response()->json(['status' => 'error', 'message' => 'Failed to send initial reply'], 500);
             }
-
+    
             try {
                 // Download the file from Telegram
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
                 $filePath = $file->getFilePath();
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
                 $fileContents = Http::get($fileUrl)->body();
-
+    
                 // Process file contents as CSV
-                $rows = array_map('str_getcsv', explode("\n", $fileContents));
-                //$totalRows = count($rows);
-
-                // Split the rows into chunks of 10
-                $chunks = array_chunk($rows, 10);
-                $totalChunks = count($chunks);
-
-                foreach ($chunks as $chunkIndex => $chunk) {
-                    $chunkIndex++; // Adjust for human-readable 1-based indexing
-
-                    // Optional: Validate chunk rows before dispatching
-                    $chunk = array_values($chunk); // Ensure indices start from 0
-
-                    // Dispatch job for the current batch
-                    $jobs[] = new ProcessIpsJob($chunk, $chatId, $progressMessageId, $chunkIndex, $totalChunks);
-                }
-
-                if (!empty($jobs)) {
-                    bus::chain($jobs)->dispatch();
-                }
+                //$rows = array_map('str_getcsv', explode("\n", $fileContents));
+    
+                // Dispatch a single job with the entire file contents
+                ProcessIpsJob::dispatch($fileContents, $chatId, $progressMessage);
+    
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
@@ -91,16 +79,16 @@ class isegarobotController extends Controller
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
             }
         } else {
-            // Notify the user that no file was received
             if ($message['text'] === 'Run') {
                 Artisan::queue('dns:update');
             } else {
                 $this->sendReply($chatId, $messageId, "No file received.");
             }
         }
-
+    
         return response()->json(['status' => 'ok']);
     }
+    
 
     private function sendReply($chatId, $messageId, $text)
     {

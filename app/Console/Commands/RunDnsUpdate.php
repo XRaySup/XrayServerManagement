@@ -47,15 +47,17 @@ class RunDnsUpdate extends Command
         $validIps = 0;
         $telegram = Telegram::bot('mybot');
         $adminIds = explode(',', env('TELEGRAM_ADMIN_IDS'));
-
+        $progressMessages = [];
+        $progressMessageText = 'Running';
         foreach ($adminIds as $adminId) {
 
-            $telegram->sendMessage([
+            $progressMessages[] = $telegram->sendMessage([
                 'chat_id' => trim($adminId),  // Use trim() to remove any extra spaces
-                'text' => 'running',
+                'text' => $progressMessageText,
             ]);
         }
-
+        //print_r($progressMessageIds);
+        //return;
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
@@ -63,24 +65,39 @@ class RunDnsUpdate extends Command
             return;
         }
 
-        $ips = $this->readCSVFromGoogleDrive('ip.csv');
+        //$ips = $this->readCSVFromGoogleDrive('ip.csv');
+        $file = Storage::disk('google')->get('DNSUpdate/ip.csv');
 
         Storage::disk('google')->put('DNSUpdate/ip.csv', '', ['visibility' => 'public']);
-        $ipResults = $this->processIps($ips);
+        $fileResponse = $this->processFileContent($file);
+
+        if ($fileResponse !== null) {
+
+            $progressMessageText .= "\nProcessing ip.csv :\n" . $fileResponse['message'];
+        }else{
+            $progressMessageText .= "\nip.csv was empty";
+        }
+        foreach ($progressMessages as $progressMessage) {
+            
+            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+
+        }
+        //return;
+
 
         //isegarobotController::replyIps($ipResults, '');
         // Fetch DNS records from Cloudflare API
         $dnsRecords = $this->cloudflare->listDnsRecords();
-        $totalDNS = count($dnsRecords);
+        $totalDNS = 0;
         if ($dnsRecords === false) {
             $this->logAndError("Failed to get DNS records. Exiting.");
             exit(1);
         }
-    // Extract IPs from DNS records in one line
-    $ipsToCheck = array_column($dnsRecords, 'content');
+        // Extract IPs from DNS records in one line
+        $ipsToCheck = array_column($dnsRecords, 'content');
 
-    // Now check the responses for all collected IPs
-    $ipResults = $this->check_ip_responses($ipsToCheck); // Check all IPs at once
+        // Now check the responses for all collected IPs
+        $ipResults = $this->check_ip_responses($ipsToCheck); // Check all IPs at once
         //print_r($ipResults);
         //return;
 
@@ -99,7 +116,7 @@ class RunDnsUpdate extends Command
                 $this->logAndInfo("Skipping record: Name='$name' does not match the pattern.");
                 continue;
             }
-
+            $totalDNS ++;
             // Check if proxy is turned off
             if ($proxied === 'true') {
                 $this->logAndInfo("Proxy is currently on for record: Name='$name', IP='$ip'. Turning it off...");
@@ -199,12 +216,14 @@ class RunDnsUpdate extends Command
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
-        foreach ($adminIds as $adminId) {
 
-            $telegram->sendMessage([
-                'chat_id' => trim($adminId),  // Use trim() to remove any extra spaces
-                'text' => "$validIps valid IPs are available. Total records are $totalDNS.",
-            ]);
+
+        $progressMessageText .= "\n$validIps valid IPs are available. Total records are $totalDNS.";
+
+        foreach ($progressMessages as $progressMessage) {
+            
+            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+
         }
     }
     private function check_ip_responses(array $ipAddresses)
@@ -250,10 +269,10 @@ class RunDnsUpdate extends Command
                 $headers = substr($response, 0, $headerSize);
 
                 if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
-                    //$this->info("Cloudflare server detected with 400 Bad Request for IP $ipAddress");
+                    $this->info("Cloudflare server detected with 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = true;
                 } else {
-                    //$this->info("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
+                    $this->info("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = false;
                 }
             }
@@ -266,7 +285,7 @@ class RunDnsUpdate extends Command
 
         return $responses;
     }
-    
+
     private function LoadIpLogData()
     {
 
@@ -401,7 +420,7 @@ class RunDnsUpdate extends Command
         if (!$dnsRecords) {
             return; // Exit if DNS records can't be loaded
         }
-        $ipsToCheck = array_column($rawIps, 0); 
+        $ipsToCheck = array_column($rawIps, 0);
         $ipResults = $this->check_ip_responses($ipsToCheck);
 
         foreach ($rawIps as $row) {
@@ -435,5 +454,121 @@ class RunDnsUpdate extends Command
             }
         }
         return;
+    }
+
+    public function processFileContent($filecontent)
+    {
+        $rows = array_map('str_getcsv', explode("\n", $filecontent));
+        $CountDNSExist = 0;
+        $CountExpectedResponse = 0;
+        $countIps = 0;
+        $countAdded = 0;
+
+        // Load DNS records once
+        $dnsRecords = $this->cloudflare->listDnsRecords();
+        if (!$dnsRecords) {
+            // Return error with status key and message
+            return [
+                'status' => 'error',
+                'message' => 'Could not connect to Cloudflare'
+            ];
+        }
+
+        $ipsToCheck = array_column($rows, 0);
+        $ipResults = $this->check_ip_responses($ipsToCheck);
+
+        foreach ($ipsToCheck as $ip) {
+            // Validate the IP address
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                $countIps++;
+                $ExpectedResponse = $ipResults[$ip] ?? false; // Get the response from the array
+
+                if ($ExpectedResponse) {
+                    $CountExpectedResponse++;
+                }
+
+                // Check if the IP exists in the DNS records
+                $ExistInDNS = false;
+                foreach ($dnsRecords as $record) {
+                    if ($record['content'] === $ip) {
+                        $ExistInDNS = true;
+                        break;
+                    }
+                }
+
+                if ($ExistInDNS) {
+                    $CountDNSExist++;
+                    continue;
+                }
+
+                // Add DNS record if the expected response is true and IP doesn't exist in DNS
+                if ($ExpectedResponse) {
+                    $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
+                    $countAdded++;
+                }
+            }
+        }
+
+        // If no valid IPs were processed, return null (or another message)
+        if ($countIps === 0) {
+            return null;  // No message or IPs processed
+        }
+
+        // Create a success message summarizing the counts if there are valid IPs
+        $summaryMessage = "Process complete! \n" .
+            "Total valid IPs checked: $countIps \n" .
+            "IPs with expected response: $CountExpectedResponse \n" .
+            "IPs already in DNS: $CountDNSExist \n" .
+            "New DNS records added: $countAdded";
+
+        // Return success with status, summary message, and count details
+        return [
+            'status' => 'success',
+            'message' => $summaryMessage,
+            'data' => [
+                'CountDNSExist' => $CountDNSExist,
+                'CountExpectedResponse' => $CountExpectedResponse,
+                'countIps' => $countIps,
+                'countAdded' => $countAdded
+            ]
+        ];
+    }
+    Public function updateTelegramMessageWithRetry($message, $text, $maxRetries = 3) {
+        $telegram = Telegram::bot('mybot'); // Initialize the Telegram bot
+    
+        // Extract chat ID and message ID from the message object
+        $chatId = $message->getChat()->getId();
+        $messageId = $message->getMessageId();
+    
+        $retryCount = 0;
+        $success = false;
+    
+        while (!$success && $retryCount < $maxRetries) {
+            try {
+                // Update the message using the Telegram API
+                $telegram->editMessageText([
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                    'text' => $text,
+                ]);
+                $success = true; // Exit the loop if successful
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                $retryCount++;
+                $this->logAndError("Telegram API error while updating message (attempt $retryCount): " . $e->getMessage());
+    
+                // Retry if it's a rate limit error or a recoverable error
+                if ($e->getCode() == 429 || $retryCount < $maxRetries) {
+                    sleep(1); // Wait before retrying
+                } else {
+                    break; // Exit loop if it's an unrecoverable error
+                }
+            }
+        }
+    
+        if (!$success) {
+            $this->logAndError("Failed to update message on Telegram after {$maxRetries} attempts.");
+        }
+    
+        return $success;
     }
 }
