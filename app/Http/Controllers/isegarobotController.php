@@ -70,7 +70,7 @@ class isegarobotController extends Controller
     
                 // Dispatch a single job with the entire file contents
                 ProcessIpsJob::dispatch($fileContents, $chatId, $progressMessage);
-                $this->sendReply($chatId, $messageId, 'filedispatched');
+                
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
@@ -102,7 +102,7 @@ class isegarobotController extends Controller
                 'reply_to_message_id' => $messageId,
                 'text' => $text,
             ]);
-            return $response->getMessageId();
+            return $response;
         } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
             Log::error('Telegram API error: ' . $e->getMessage());
             return false;
