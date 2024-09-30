@@ -19,13 +19,13 @@ class ProcessIpsJob implements ShouldQueue
 
     public $timeout = 900; // Set timeout to 15 minutes
     protected $chatId;
-    protected $fileContet;
+    protected $fileContent;
     protected $progressMessage;
 
 
-    public function __construct($fileContet, $chatId, $progressMessage)
+    public function __construct($fileContent, $chatId, $progressMessage)
     {
-        $this->fileContet = $fileContet;
+        $this->fileContent = $fileContent;
         $this->chatId = $chatId;
         $this->progressMessage = $progressMessage;
 
@@ -33,7 +33,7 @@ class ProcessIpsJob implements ShouldQueue
 
     public function handle(DnsUpdateService $dnsUpdateService)
     {
-        log::info('job started');
+        //log::info('job started');
         try {
             // $telegram = Telegram::bot('mybot');
             // // Instantiate the RunDnsUpdate command and process IPs
@@ -42,9 +42,9 @@ class ProcessIpsJob implements ShouldQueue
             //     'text' => 'job started',
             // ]);
             
-            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "before process.");
-            $fileResponse = $dnsUpdateService->processFileContent($this->fileContet);
-            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "after command.");
+            //$dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "before process.");
+            $fileResponse = $dnsUpdateService->processFileContent($this->fileContent);
+            //$dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "after command.");
 
             $progressMessageText = '';
             if ($fileResponse !== null) {
