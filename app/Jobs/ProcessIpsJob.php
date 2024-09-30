@@ -35,8 +35,11 @@ class ProcessIpsJob implements ShouldQueue
         try {
             $telegram = Telegram::bot('mybot');
             // Instantiate the RunDnsUpdate command and process IPs
-            $command = app(RunDnsUpdate::class);
+
+            $command = new RunDnsUpdate;
+            $command->updateTelegramMessageWithRetry($this->progressMessage, "before command.");
             $fileResponse = $command->processFileContent($this->fileContet);
+
             $progressMessageText = '';
             if ($fileResponse !== null) {
 
@@ -49,9 +52,10 @@ class ProcessIpsJob implements ShouldQueue
                 $command->updateTelegramMessageWithRetry($this->progressMessage, $progressMessageText);
     
 
+
  
         } catch (\Exception $e) {
-            \Log::error('Failed to process IPs: ' . $e->getMessage());
+            Log::error('Failed to process IPs: ' . $e->getMessage());
 
         }
     }
