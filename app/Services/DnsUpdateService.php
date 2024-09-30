@@ -273,7 +273,7 @@ class DnsUpdateService
         // Read the file content into an array of IPs
         $rows = array_map('trim', explode("\n", $filecontent)); // Use trim to remove any whitespace
         $ipsToCheck = array_filter($rows); // Remove any empty lines
-        //$this->logAndInfo(implode(',', $ipsToCheck));
+        $this->logAndInfo(implode(',', $ipsToCheck));
         // Check the IP responses
         $ipResults = $this->check_ip_responses($ipsToCheck);
 
