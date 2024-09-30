@@ -11,6 +11,7 @@ use App\Console\Commands\RunDnsUpdate;
 //use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Laravel\Facades\Telegram;
+use App\Services\DnsUpdateService;
 
 class ProcessIpsJob implements ShouldQueue
 {
@@ -30,15 +31,16 @@ class ProcessIpsJob implements ShouldQueue
 
     }
 
-    public function handle()
+    public function handle(DnsUpdateService $dnsUpdateService)
     {
+        
         try {
             $telegram = Telegram::bot('mybot');
             // Instantiate the RunDnsUpdate command and process IPs
 
-            $command = new RunDnsUpdate;
-            $command->updateTelegramMessageWithRetry($this->progressMessage, "before command.");
-            $fileResponse = $command->processFileContent($this->fileContet);
+            
+            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "before command.");
+            $fileResponse = $dnsUpdateService->processFileContent($this->fileContet);
 
             $progressMessageText = '';
             if ($fileResponse !== null) {
@@ -49,7 +51,7 @@ class ProcessIpsJob implements ShouldQueue
             }
 
                 
-                $command->updateTelegramMessageWithRetry($this->progressMessage, $progressMessageText);
+            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, $progressMessageText);
     
 
 
