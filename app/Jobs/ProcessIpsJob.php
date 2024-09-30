@@ -42,9 +42,9 @@ class ProcessIpsJob implements ShouldQueue
             //     'text' => 'job started',
             // ]);
             
-            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "Before process.");
+            //$dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "Before process.");
             $fileResponse = $dnsUpdateService->processFileContent($this->fileContent);
-            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "After Process.");
+            //$dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "After Process.");
 
             $progressMessageText = '';
             if ($fileResponse !== null) {
