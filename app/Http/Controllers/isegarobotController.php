@@ -64,13 +64,13 @@ class isegarobotController extends Controller
                 $filePath = $file->getFilePath();
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
                 $fileContents = Http::get($fileUrl)->body();
-    
+                $this->sendReply($chatId, $messageId, 'file read');
                 // Process file contents as CSV
                 //$rows = array_map('str_getcsv', explode("\n", $fileContents));
     
                 // Dispatch a single job with the entire file contents
                 ProcessIpsJob::dispatch($fileContents, $chatId, $progressMessage);
-    
+                $this->sendReply($chatId, $messageId, 'filedispatched');
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
