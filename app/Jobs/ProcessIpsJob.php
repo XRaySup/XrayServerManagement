@@ -33,7 +33,7 @@ class ProcessIpsJob implements ShouldQueue
 
     public function handle(DnsUpdateService $dnsUpdateService)
     {
-        
+        log::info('job started');
         try {
             $telegram = Telegram::bot('mybot');
             // Instantiate the RunDnsUpdate command and process IPs
