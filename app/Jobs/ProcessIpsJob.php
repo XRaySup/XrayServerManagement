@@ -37,7 +37,10 @@ class ProcessIpsJob implements ShouldQueue
         try {
             $telegram = Telegram::bot('mybot');
             // Instantiate the RunDnsUpdate command and process IPs
-
+            $telegram->sendMessage([
+                'chat_id' => $this->chatId,
+                'text' => 'job started',
+            ]);
             
             $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, "before command.");
             $fileResponse = $dnsUpdateService->processFileContent($this->fileContet);
