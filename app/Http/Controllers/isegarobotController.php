@@ -79,10 +79,14 @@ class isegarobotController extends Controller
                 $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
             }
         } else {
-            if ($message['text'] === 'Run') {
-                Artisan::queue('dns:update');
+            if (isset($message['text'])) {
+                if ($message['text'] === 'Run') {
+                    Artisan::queue('dns:update');
+                } else {
+                    $this->sendReply($chatId, $messageId, "No file received.");
+                }
             } else {
-                $this->sendReply($chatId, $messageId, "No file received.");
+                $this->sendReply($chatId, $messageId, "No text message received.");
             }
         }
     
