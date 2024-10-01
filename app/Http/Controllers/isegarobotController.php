@@ -67,7 +67,7 @@ class isegarobotController extends Controller
     
                 // Dispatch a single job with the entire file contents
                 
-                //ProcessIpsJob::dispatch($fileContents, $progressMessage);
+                ProcessIpsJob::dispatch($fileContents, $progressMessage);
                 $progressMessage = $this->sendReply($chatId, $messageId, 'test');
                 
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
