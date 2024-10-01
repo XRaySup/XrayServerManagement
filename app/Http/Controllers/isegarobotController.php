@@ -57,7 +57,7 @@ class isegarobotController extends Controller
             if (!$progressMessage) {
                 return response()->json(['status' => 'error', 'message' => 'Failed to send initial reply'], 500);
             }
-    
+            $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
             try {
                 // Download the file from Telegram
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
