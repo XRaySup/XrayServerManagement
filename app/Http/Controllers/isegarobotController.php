@@ -5,11 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Http;
-use Telegram\Bot\Exceptions\TelegramSDKException;
-use Telegram\Bot\Exceptions\TelegramResponseException;
 use App\Jobs\ProcessIpsJob;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Artisan;
 
 
@@ -70,7 +67,7 @@ class isegarobotController extends Controller
     
                 // Dispatch a single job with the entire file contents
                 
-                ProcessIpsJob::dispatch($fileContents, $progressMessage);
+                //ProcessIpsJob::dispatch($fileContents, $progressMessage);
                 $progressMessage = $this->sendReply($chatId, $messageId, 'test');
                 
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
