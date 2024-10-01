@@ -26,8 +26,8 @@ class DnsUpdateService
     {
         //parent::__construct();
 
-        $this->zoneId = env('CLOUDFLARE_ZONE_ID');
-        $this->apiToken = env('CLOUDFLARE_API_TOKEN');
+        //$this->zoneId = env('CLOUDFLARE_ZONE_ID');
+        //$this->apiToken = env('CLOUDFLARE_API_TOKEN');
         $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_DOMAIN');
         $this->logFile = base_path('storage/logs/dns_update.log');
 
