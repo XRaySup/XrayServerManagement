@@ -57,7 +57,7 @@ class isegarobotController extends Controller
             if (!$progressMessage) {
                 return response()->json(['status' => 'error', 'message' => 'Failed to send initial reply'], 500);
             }
-            $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
+            
             try {
                 // Download the file from Telegram
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
@@ -69,6 +69,7 @@ class isegarobotController extends Controller
                 //$rows = array_map('str_getcsv', explode("\n", $fileContents));
     
                 // Dispatch a single job with the entire file contents
+                $progressMessage = $this->sendReply($chatId, $messageId, 'test');
                 ProcessIpsJob::dispatch($fileContents, $chatId, $progressMessage);
                 
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
