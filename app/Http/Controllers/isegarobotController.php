@@ -69,8 +69,9 @@ class isegarobotController extends Controller
                 //$rows = array_map('str_getcsv', explode("\n", $fileContents));
     
                 // Dispatch a single job with the entire file contents
+                
+                ProcessIpsJob::dispatch($fileContents, $progressMessage);
                 $progressMessage = $this->sendReply($chatId, $messageId, 'test');
-                ProcessIpsJob::dispatch($fileContents, $chatId, $progressMessage);
                 
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());

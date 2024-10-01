@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Console\Commands\RunDnsUpdate;
+//use App\Console\Commands\RunDnsUpdate;
 //use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Laravel\Facades\Telegram;
@@ -18,15 +18,15 @@ class ProcessIpsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $timeout = 900; // Set timeout to 15 minutes
-    protected $chatId;
+    //protected $chatId;
     protected $fileContent;
     protected $progressMessage;
 
 
-    public function __construct($fileContent, $chatId, $progressMessage)
+    public function __construct($fileContent, $progressMessage)
     {
         $this->fileContent = $fileContent;
-        $this->chatId = $chatId;
+        //$this->chatId = $chatId;
         $this->progressMessage = $progressMessage;
 
     }
