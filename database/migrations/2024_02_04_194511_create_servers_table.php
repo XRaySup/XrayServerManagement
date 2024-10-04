@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->foreignIdFor(\App\Models\Owner::class)->nullable()->constrained()->nullOnDelete();
             $table->foreignIdFor(\App\Models\Project::class)->nullable()->constrained()->nullOnDelete();
             $table->string('domain')->nullable();
-            $table->string('sessionCookie')->nullable();
+            $table->string('sessionCookie', 1024)->nullable();
             $table->json('tags')->nullable();
             $table->timestamps();
         });
