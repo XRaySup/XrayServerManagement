@@ -421,7 +421,7 @@ class Server extends Model
                         $lastUsageRow = Usage::where('server_id', $this->id)
                             ->where('inbound_id', $inbound['id'])
                             ->where('client_id', $client['id'])
-                            ->orderBy('timestamp', 'desc')
+                            ->orderBy('created_at', 'desc')
                             ->latest()
                             ->first();
                         if ($lastUsageRow === null) {

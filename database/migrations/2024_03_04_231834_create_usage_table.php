@@ -17,10 +17,10 @@ return new class extends Migration
             $table->foreignIdFor(\App\Models\Server::class,'server_id')->constrained();
             $table->integer('inbound_id');
             $table->integer('client_id')->nullable();             
-            $table->float('up');
-            $table->float('down');
-            $table->float('upIncrease');
-            $table->float('downIncrease');
+            $table->double('up');
+            $table->double('down');
+            $table->double('upIncrease');
+            $table->double('downIncrease');
             $table->timestamps();
         });
     }
