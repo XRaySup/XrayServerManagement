@@ -192,6 +192,7 @@ class Server extends Model
         $endpoint = '/panel/api/inbounds/list';
         $url = $this->baseUrl . $endpoint;
         $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
+        dump($response);
         if ($response['success'] == false) {
             log::error($response['error']);
             $this->update(['status' => 'OFFLINE']);
@@ -312,7 +313,7 @@ class Server extends Model
                 'Accept' => 'application/json',
                 'Cookie' => $cookies,
             ])->$method($url, $data);
-            dump($response);
+            dump($response->json());
         } catch (\Exception $e) {
             // Handle exceptions, log errors, or return false as needed
             // You can access the exception message with $e->getMessage()
