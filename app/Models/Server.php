@@ -279,10 +279,15 @@ class Server extends Model
             // Split the string into individual cookies
             $cookieArray = [];
             $cookieParts = preg_split('/,(?=[^;]+;)/', $cookies);
+            dump($cookieParts); // Debugging: dump the split cookie parts
             foreach ($cookieParts as $cookie) {
                 $parts = explode(';', $cookie);
                 $nameValue = explode('=', $parts[0]);
-                $cookieArray[trim($nameValue[0])] = trim($nameValue[1]);
+                if (count($nameValue) == 2) {
+                    $cookieArray[trim($nameValue[0])] = trim($nameValue[1]);
+                } else {
+                    Log::warning("Invalid cookie format: " . $parts[0]);
+                }
             }
             $cookies = implode('; ', array_map(
                 function ($value, $key) { return $key . '=' . $value; },
@@ -290,7 +295,7 @@ class Server extends Model
                 array_keys($cookieArray)
             ));
         }
-        dump($cookies);
+        dump($cookies); // Debugging: dump the final cookies string
         $this->update(['sessionCookie' => $cookies]);
 
         return [
