@@ -312,6 +312,7 @@ class Server extends Model
                 'Accept' => 'application/json',
                 'Cookie' => $cookies,
             ])->$method($url, $data);
+            dump($response);
         } catch (\Exception $e) {
             // Handle exceptions, log errors, or return false as needed
             // You can access the exception message with $e->getMessage()
