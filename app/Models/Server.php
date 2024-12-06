@@ -149,10 +149,10 @@ class Server extends Model
         }
         $inboundStat = $this->getInboundsStat();
 
-        if ($inboundStat == null) {
-            $this->update(['status' => 'OFFLINE']);
-            return;
-        }
+        // if ($inboundStat == null) {
+        //     $this->update(['status' => 'OFFLINE']);
+        //     return;
+        // }
         $this->update(['status' => 'ONLINE']);
         dump($inboundStat);
         $this->update(['inboundStat' => $inboundStat]);
