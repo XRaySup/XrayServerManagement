@@ -274,7 +274,6 @@ class Server extends Model
 
         // Extract session cookie from the response headers
         $cookies = $loginResponse->header('Set-Cookie', null);
-
         if (is_string($cookies)) {
             // Split the string into individual cookies
             $cookieArray = [];
@@ -307,6 +306,7 @@ class Server extends Model
     private function makeApiRequest($url, $cookies, $data = null, $method = 'GET')
     {
 
+        dump($cookies);
         try {
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
