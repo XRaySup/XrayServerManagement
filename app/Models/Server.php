@@ -148,12 +148,13 @@ class Server extends Model
             return;
         }
         $inboundStat = $this->getInboundsStat();
-        dump($inboundStat);
+
         if ($inboundStat == null) {
             $this->update(['status' => 'OFFLINE']);
             return;
         }
         $this->update(['status' => 'ONLINE']);
+        dump($inboundStat);
         $this->update(['inboundStat' => $inboundStat]);
         $url = parse_url($this->address);
         if (isset($url['host'])) {
@@ -280,7 +281,7 @@ class Server extends Model
             // Split the string into individual cookies
             $cookieArray = [];
             $cookieParts = preg_split('/,(?=[^;]+;)/', $cookies);
-            dump($cookieParts); // Debugging: dump the split cookie parts
+            //dump($cookieParts); // Debugging: dump the split cookie parts
             foreach ($cookieParts as $cookie) {
                 $parts = explode(';', $cookie);
                 $nameValue = explode('=', $parts[0]);
@@ -296,7 +297,7 @@ class Server extends Model
                 array_keys($cookieArray)
             ));
         }
-        dump($cookies); // Debugging: dump the final cookies string
+        //dump($cookies); // Debugging: dump the final cookies string
         $this->update(['sessionCookie' => $cookies]);
 
         return [
@@ -308,13 +309,13 @@ class Server extends Model
     private function makeApiRequest($url, $cookies, $data = null, $method = 'GET')
     {
 
-        dump($cookies);
+        //dump($cookies);
         try {
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
                 'Cookie' => $cookies,
             ])->$method($url, $data);
-            dump($response->json());
+            //dump($response->json());
         } catch (\Exception $e) {
             // Handle exceptions, log errors, or return false as needed
             // You can access the exception message with $e->getMessage()
