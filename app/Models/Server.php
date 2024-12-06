@@ -275,21 +275,22 @@ class Server extends Model
         // Extract session cookie from the response headers
         $cookies = $loginResponse->header('Set-Cookie', null);
 
-
-        $cookieArray = [];
-        $cookieParts = explode(',', $cookies);
-        foreach ($cookieParts as $cookie) {
-            $parts = explode(';', $cookie);
-            $nameValue = explode('=', $parts[0]);
-            $cookieArray[trim($nameValue[0])] = trim($nameValue[1]);
+        if (is_string($cookies)) {
+            // Split the string into individual cookies
+            $cookieArray = [];
+            $cookieParts = preg_split('/,(?=[^;]+;)/', $cookies);
+            foreach ($cookieParts as $cookie) {
+                $parts = explode(';', $cookie);
+                $nameValue = explode('=', $parts[0]);
+                $cookieArray[trim($nameValue[0])] = trim($nameValue[1]);
+            }
+            $cookies = implode('; ', array_map(
+                function ($value, $key) { return $key . '=' . $value; },
+                $cookieArray,
+                array_keys($cookieArray)
+            ));
         }
-        $cookies = implode('; ', array_map(
-            function ($value, $key) {
-                return $key . '=' . $value; },
-            $cookieArray,
-            array_keys($cookieArray)
-        ));
-
+        dump($cookies);
         $this->update(['sessionCookie' => $cookies]);
 
         return [
