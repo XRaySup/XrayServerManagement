@@ -420,6 +420,13 @@ function genVlessLink($inbound, $client, $address, $remark)
                 $params['mode'] = 'multi';
             }
             break;
+        case 'httpupgrade':
+            
+            $httpupgrade = $stream['httpupgradeSettings'];
+            $params['path'] = $httpupgrade['path'];
+            $headers = $httpupgrade['headers'];
+            $params['host'] = searchKey($headers, 'host');
+            break;
     }
 
     $security = $stream['security'];
