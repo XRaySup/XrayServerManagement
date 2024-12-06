@@ -60,6 +60,8 @@ class Server extends Model
 
     public function getBaseUrlAttribute()
     {
+
+        return $this->address;
         $scheme = 'https';
         $port = $this->xui_port;
 
@@ -263,17 +265,31 @@ class Server extends Model
         $responseJson = $loginResponse->json();
 
         if ($responseJson['success'] == false) {
-
             Log::error("Login failed: " . $responseJson['msg']);
             return [
                 'success' => false,
                 'error' => $responseJson['msg'],
             ];
         }
-        // Extract session cookie from the response headers
-        $cookies = $loginResponse->header('Set-Cookie');
 
-        // Update the 'sessionCookie' column in the model
+        // Extract session cookie from the response headers
+        $cookies = $loginResponse->header('Set-Cookie', null);
+
+
+        $cookieArray = [];
+        $cookieParts = explode(',', $cookies);
+        foreach ($cookieParts as $cookie) {
+            $parts = explode(';', $cookie);
+            $nameValue = explode('=', $parts[0]);
+            $cookieArray[trim($nameValue[0])] = trim($nameValue[1]);
+        }
+        $cookies = implode('; ', array_map(
+            function ($value, $key) {
+                return $key . '=' . $value; },
+            $cookieArray,
+            array_keys($cookieArray)
+        ));
+
         $this->update(['sessionCookie' => $cookies]);
 
         return [
