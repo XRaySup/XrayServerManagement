@@ -154,7 +154,6 @@ class Server extends Model
         //     return;
         // }
         $this->update(['status' => 'ONLINE']);
-        dump($inboundStat);
         $this->update(['inboundStat' => $inboundStat]);
         $url = parse_url($this->address);
         if (isset($url['host'])) {
@@ -194,7 +193,7 @@ class Server extends Model
         $endpoint = '/panel/api/inbounds/list';
         $url = $this->baseUrl . $endpoint;
         $response = $this->makeApiRequest($url, $this->sessionCookie, '', 'GET');
-        dump($response);
+        //dump($response);
         if ($response['success'] == false) {
             log::error($response['error']);
             $this->update(['status' => 'OFFLINE']);
