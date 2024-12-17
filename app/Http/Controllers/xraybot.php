@@ -49,15 +49,16 @@ class xraybot extends Controller
                 if ($message['text'] === 'Run') {
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
-                    $message = "
+                    $reply = "
         *Remark* | *Usage (GB)*
         --- | ---
         ";
                     foreach ($servers as $server) {
                         if ($server->status == "ONLINE") {
-                            $message .= "{$server->remark} | *{$server->todayUsage}* \n";
+                            $reply .= "{$server->remark} | *{$server->todayUsage}* \n";
                         }
                     }
+                    $this->sendReply($chatId, $messageId, $reply);
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
                 }
