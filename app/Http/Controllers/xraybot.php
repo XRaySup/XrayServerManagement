@@ -58,7 +58,16 @@ class xraybot extends Controller
                             $reply .= "{$server->remark} | *{$server->todayUsage}* \n";
                         }
                     }
-                    $this->sendReply($chatId, $messageId, $reply);
+                    try {
+                        $response = $this->telegram->sendMessage([
+                            'chat_id' => $chatId,
+                            'reply_to_message_id' => $messageId,
+                            'text' => $reply,
+                        ]);
+                        return $response;
+                    } catch (\Exception $e) {
+                        Log::error('Telegram API error: ' . $e->getMessage());
+                    }
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
                 }
