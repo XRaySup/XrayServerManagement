@@ -49,9 +49,7 @@ class xraybot extends Controller
                 if ($message['text'] === 'Run') {
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
-                    $reply = "
-        *Remark* | *Usage (GB)*
-        --- | ---\n";
+                    $reply = "*Remark* | *Usage (GB)*\n--- | ---\n";
                     foreach ($servers as $server) {
                         if ($server->status == "ONLINE") {
                             $reply .= "{$server->remark} | *{$server->todayUsage}* \n";
