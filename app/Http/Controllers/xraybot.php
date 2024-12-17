@@ -46,7 +46,7 @@ class xraybot extends Controller
                 return response()->json(['status' => 'ok']);
             }
             if (isset($message['text'])) {
-                if ($message['text'] === 'Run') {
+                if ($message['text'] === '/usage') {
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
                     $reply = "*Remark* | *Usage (GB)*\n--- | ---\n";
