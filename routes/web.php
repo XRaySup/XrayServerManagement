@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\isegarobotController;
+use App\Http\Controllers\xraybot;
 
 Route::post('/isegarobot/webhook', [isegarobotController::class, 'handleWebhook']);
+Route::post('/xraybot/webhook', [xraybot::class, 'handleWebhook']);
 
 /*
 |--------------------------------------------------------------------------

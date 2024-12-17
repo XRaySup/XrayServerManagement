@@ -4,13 +4,10 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServerResource\Pages;
 use App\Models\Server;
-//use App\Models\Usage;
-//use App\Services\ApiConnectorService;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-//use Filament\Notifications\Collection;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\BulkAction;
@@ -23,7 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 
 
 
@@ -70,6 +67,14 @@ class ServerResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $servers = Server::all();
+        $totalTodayUsage = 0;
+
+
+        foreach ($servers as $server) {
+
+            $totalTodayUsage += $server->todayUsage;
+        }
         return $table
             ->columns([
                 TextColumn::make('name')
@@ -89,7 +94,10 @@ class ServerResource extends Resource
                         'DRAFT' => 'warning'
                     }),
 
-                TextColumn::make('today usage'),
+                TextColumn::make('today usage')
+                ->sortable(true)
+                ->summarize(Summarizer::make()
+                ->label($totalTodayUsage))
 
 
             ])
@@ -125,7 +133,6 @@ class ServerResource extends Resource
                                         $count += 1;
 
                                     }
-                                    //dump($try[0]);
                                 }
                             }
                             $message .= "$count/4\n";
