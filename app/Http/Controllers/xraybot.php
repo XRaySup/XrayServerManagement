@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use Illuminate\Support\Facades\Log;
+use App\Models\Server; // Add this line to import the Server model
 
 class xraybot extends Controller
 {
@@ -93,6 +94,4 @@ class xraybot extends Controller
             Log::error('Telegram API error: ' . $e->getMessage());
         }
     }
-
-
 }
