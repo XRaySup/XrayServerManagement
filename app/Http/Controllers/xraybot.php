@@ -20,56 +20,64 @@ class xraybot extends Controller
      */
     public function handleWebhook(Request $request)
     {
-        $message = $request->input('message');
-        $chatId = $message['chat']['id'];
-        $messageId = $message['message_id'];
-        $userName = $message['from']['username'] ?? 'Unknown';
-        $firstName = $message['from']['first_name'] ?? 'Unknown';
-        $lastName = $message['from']['last_name'] ?? 'Unknown';
+        try {
+            $message = $request->input('message');
+            $chatId = $message['chat']['id'];
+            $messageId = $message['message_id'];
+            $userName = $message['from']['username'] ?? 'Unknown';
+            $firstName = $message['from']['first_name'] ?? 'Unknown';
+            $lastName = $message['from']['last_name'] ?? 'Unknown';
 
-        $adminIds = explode(',', env('TELEGRAM_XADMIN_IDS'));
-        if (!in_array((int) $chatId, $adminIds)) {
-            // Notify admins about the unauthorized attempt
-            foreach ($adminIds as $adminId) {
-                $this->sendReply(trim($adminId), null, "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName");
+            // Log the received message for debugging
+            Log::info('Received message: ', $message);
+
+            $adminIds = explode(',', env('TELEGRAM_XADMIN_IDS'));
+            if (!in_array((int) $chatId, $adminIds)) {
+                // Notify admins about the unauthorized attempt
+                foreach ($adminIds as $adminId) {
+                    $this->sendReply(trim($adminId), null, "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName");
+                }
+
+                // Send message to the non-admin user
+                $this->sendReply($chatId, $messageId, "You are not authorized to use this bot.");
+
+                // Return response after non-admin check
+                return response()->json(['status' => 'ok']);
             }
-
-            // Send message to the non-admin user
-            $this->sendReply($chatId, $messageId, "You are not authorized to use this bot.");
-
-            // Return response after non-admin check
-            return response()->json(['status' => 'ok']);
-        }
-        if (isset($message['text'])) {
-            if ($message['text'] === 'Run') {
-                $servers = Server::all();
-                // Prepare the table message in Markdown format
-                $message = "
+            if (isset($message['text'])) {
+                if ($message['text'] === 'Run') {
+                    $servers = Server::all();
+                    // Prepare the table message in Markdown format
+                    $message = "
         *Remark* | *Usage (GB)*
         --- | ---
         ";
-                foreach ($servers as $server) {
-                    if ($server->status == "ONLINE") {
-                        $message .= "{$server->remark} | *{$server->todayUsage}* \n";
+                    foreach ($servers as $server) {
+                        if ($server->status == "ONLINE") {
+                            $message .= "{$server->remark} | *{$server->todayUsage}* \n";
+                        }
                     }
+                } else {
+                    $this->sendReply($chatId, $messageId, "No file received.");
                 }
             } else {
-                $this->sendReply($chatId, $messageId, "No file received.");
+                $this->sendReply($chatId, $messageId, "No text message received.");
             }
-        } else {
-            $this->sendReply($chatId, $messageId, "No text message received.");
+
+            $text = $message['text'] ?? '';
+
+            // Process the message
+            if ($text === '/start') {
+                $this->sendReply($chatId, $messageId, 'Welcome to the bot!');
+            } else {
+                $this->sendReply($chatId, $messageId, 'You said: ' . $text);
+            }
+
+            return response()->json(['status' => 'ok']);
+        } catch (\Exception $e) {
+            Log::error('Error handling webhook: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
-
-        $text = $message['text'] ?? '';
-
-        // Process the message
-        if ($text === '/start') {
-            $this->sendReply($chatId, $messageId, 'Welcome to the bot!');
-        } else {
-            $this->sendReply($chatId, $messageId, 'You said: ' . $text);
-        }
-
-        return response()->json(['status' => 'ok']);
     }
 
     private function sendReply($chatId, $messageId, $text)
