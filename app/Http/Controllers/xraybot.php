@@ -50,11 +50,14 @@ class xraybot extends Controller
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
                     $reply = "*Remark* | *Usage (GB)*\n--- | ---\n";
+                    $totalUsage = 0;
                     foreach ($servers as $server) {
                         if ($server->status == "ONLINE") {
                             $reply .= "{$server->remark} | *{$server->todayUsage}* \n";
+                            $totalUsage += $server->todayUsage;
                         }
                     }
+                    $reply .= "Total | *{$totalUsage}* \n";
                     try {
                         $response = $this->telegram->sendMessage([
                             'chat_id' => $chatId,

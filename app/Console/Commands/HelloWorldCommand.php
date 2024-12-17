@@ -26,11 +26,14 @@ class HelloWorldCommand extends Command
 *Remark* | *Usage (GB)*
 --- | ---
 ";
+$totalUsage = 0;
         foreach ($servers as $server) {
             if ($server->status == "ONLINE") {
                 $message .= "{$server->remark} | *{$server->todayUsage}* \n";
+                $totalUsage += $server->todayUsage;
             }
         }
+        $message .= "Total | *{$totalUsage}* \n";
         // Send the message to the admin
         $telegram->sendMessage([
             'chat_id' => $adminChatId,
