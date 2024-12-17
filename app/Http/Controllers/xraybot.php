@@ -63,6 +63,7 @@ class xraybot extends Controller
                             'chat_id' => $chatId,
                             'reply_to_message_id' => $messageId,
                             'text' => $reply,
+                            'parse_mode' => 'Markdown'
                         ]);
                         return $response;
                     } catch (\Exception $e) {
