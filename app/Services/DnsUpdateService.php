@@ -118,6 +118,7 @@ class DnsUpdateService
         // }
 
         // Fetch DNS records from Cloudflare API
+        
         $dnsRecords = $this->cloudflare->listDnsRecords();
         $totalDNS = 0;
         if ($dnsRecords === false) {
@@ -314,7 +315,7 @@ class DnsUpdateService
                 'message' => 'Could not connect to Cloudflare'
             ];
         }
-
+        $this->updateTelegramMessageWithRetry($message, $this->subdomainPattern . ' DNS records loaded successfully.');
         // Read the file content into an array of lines
         $rows = array_map('trim', explode("\n", $filecontent)); // Use trim to remove any whitespace
 
