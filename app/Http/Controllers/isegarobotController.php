@@ -90,7 +90,7 @@ class isegarobotController extends Controller
                         });
                         $dnsUpdateService->botDNSCheck($progressMessage);
                     });
-                    //$this->sendReply($chatId, $messageId, "DNS update command has been executed.");
+                    $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
                 }
