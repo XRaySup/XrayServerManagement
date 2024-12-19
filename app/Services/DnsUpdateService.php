@@ -391,7 +391,7 @@ class DnsUpdateService
                 "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
                 "IPs with expected 400 response: $CountExpectedResponse400 \n" .
                 "IPs with expected Xray response: $CountExpectedResponse \n" .
-                "IPs already in DNS: $CountDNSExist \n" .
+                "IPs already in DNS $this->subdomainPattern: $CountDNSExist \n" .
                 "New DNS records added: $countAdded";
             //$this->updateTelegramMessageWithRetry($message, $summaryMessage);
         // Send progress update to Telegram every 2 seconds
