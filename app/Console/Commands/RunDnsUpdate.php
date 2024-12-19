@@ -42,8 +42,11 @@ class RunDnsUpdate extends Command
         // $this->ensureLogExists($this->logFile);
     }
 
-    public function handle(DnsUpdateService $dnsUpdateService)
+    public function handle()
     {
+        $dnsUpdateService = new DnsUpdateService(function ($message) {
+            $this->info($message);
+        });
         $dnsUpdateService->handle();
 
     }
