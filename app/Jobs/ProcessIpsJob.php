@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\DnsUpdateService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -15,16 +16,18 @@ class ProcessIpsJob implements ShouldQueue
 
     protected $fileContents;
     protected $progressMessage;
+    protected $dnsUpdateService;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($fileContents, $progressMessage)
+    public function __construct($fileContents, $progressMessage, DnsUpdateService $dnsUpdateService)
     {
         $this->fileContents = $fileContents;
         $this->progressMessage = $progressMessage;
+        $this->dnsUpdateService = $dnsUpdateService;
     }
 
     /**
@@ -38,7 +41,8 @@ class ProcessIpsJob implements ShouldQueue
         Log::info('File contents: ' . print_r($this->fileContents, true));
         Log::info('Progress message: ' . $this->progressMessage);
 
-        // Add your processing logic here
+        // Process the file content using DnsUpdateService
+        $this->dnsUpdateService->processFileContent($this->fileContents, $this->progressMessage);
 
         Log::info('ProcessIpsJob completed.');
     }
