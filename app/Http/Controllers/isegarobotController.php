@@ -81,7 +81,9 @@ class isegarobotController extends Controller
             if (isset($message['text'])) {
                 if ($message['text'] === 'Run') {
                     $this->sendReply($chatId, $messageId, "before DNS update command has been executed.");
-                    Artisan::call('dns:update');
+                    dispatch(function () {
+                        Artisan::call('dns:update');
+                    });
                     $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
