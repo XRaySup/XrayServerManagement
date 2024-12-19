@@ -41,7 +41,9 @@ class ProcessIpsJob implements ShouldQueue
             //     'chat_id' => $this->chatId,
             //     'text' => 'job started',
             // ]);
-            
+            $dnsUpdateService = new DnsUpdateService(function ($message) {
+                Log::info($message);
+            });
             $fileResponse = $dnsUpdateService->processFileContent($this->fileContent,$this->progressMessage);
 
 
