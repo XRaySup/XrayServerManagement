@@ -88,7 +88,7 @@ class isegarobotController extends Controller
                     $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
                     // Dispatch the BotDNSCheckJob
                     BotDNSCheckJob::dispatch($progressMessage);
-                    $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
+                    //$this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
                 }
