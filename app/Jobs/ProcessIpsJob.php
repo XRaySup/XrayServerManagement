@@ -33,37 +33,30 @@ class ProcessIpsJob implements ShouldQueue
 
     public function handle(DnsUpdateService $dnsUpdateService)
     {
-        //log::info('job started');
         try {
-            // $telegram = Telegram::bot('mybot');
-            // // Instantiate the RunDnsUpdate command and process IPs
-            // $telegram->sendMessage([
-            //     'chat_id' => $this->chatId,
-            //     'text' => 'job started',
-            // ]);
             $dnsUpdateService = new DnsUpdateService(function ($message) {
                 Log::info($message);
             });
-            $fileResponse = $dnsUpdateService->processFileContent($this->fileContent,$this->progressMessage);
 
+            // Check if the file content is from a forwarded message
+            if (isset($this->fileContent['forwarded_from'])) {
+                $forwardedFrom = $this->fileContent['forwarded_from'];
+                Log::info("File forwarded from: " . $forwardedFrom);
+            }
+
+            $fileResponse = $dnsUpdateService->processFileContent($this->fileContent, $this->progressMessage);
 
             $progressMessageText = '';
             if ($fileResponse !== null) {
-
                 $progressMessageText .= "\nProcessing file :\n" . $fileResponse['message'];
-            }else{
+            } else {
                 $progressMessageText .= "\nFile was empty!";
             }
 
-                
             $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, $progressMessageText);
-    
 
-
- 
         } catch (\Exception $e) {
             Log::error('Failed to process IPs: ' . $e->getMessage());
-
         }
     }
 }
