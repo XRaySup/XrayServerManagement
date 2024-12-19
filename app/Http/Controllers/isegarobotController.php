@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use App\Jobs\ProcessIpsJob;
 use Illuminate\Support\Facades\Log;
 use App\Services\DnsUpdateService;
+use App\Jobs\BotDNSCheckJob;
 
 
 
@@ -164,9 +165,10 @@ class isegarobotController extends Controller
                     // Send initial message about processing start
                     $initialReply = "Running the command.";
                     $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
-                    dispatch(function () use ($progressMessage) {
-                        $this->dnsUpdateService->botDNSCheck($progressMessage);
-                    });
+
+                    // Dispatch the BotDNSCheckJob
+                    BotDNSCheckJob::dispatch($progressMessage);
+
                     $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
