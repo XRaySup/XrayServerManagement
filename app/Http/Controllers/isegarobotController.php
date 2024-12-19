@@ -83,6 +83,7 @@ class isegarobotController extends Controller
             if (isset($message['text'])) {
                 if ($message['text'] === '/testdns') {
                     // Send initial message about processing start
+                    
                     $initialReply = "Running the command.";
                     
                     $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
