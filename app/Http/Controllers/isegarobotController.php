@@ -112,4 +112,16 @@ class isegarobotController extends Controller
             return false;
         }
     }
+
+    public function processIps(Request $request)
+    {
+        $fileContents = $request->input('fileContents');
+        $progressMessage = $request->input('progressMessage');
+
+        Log::info('Dispatching ProcessIpsJob.');
+        ProcessIpsJob::dispatch($fileContents, $progressMessage);
+        Log::info('ProcessIpsJob dispatched.');
+
+        return response()->json(['status' => 'Job dispatched']);
+    }
 }
