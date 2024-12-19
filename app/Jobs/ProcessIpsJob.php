@@ -23,11 +23,13 @@ class ProcessIpsJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct($fileContents, $progressMessage, DnsUpdateService $dnsUpdateService)
+    public function __construct($fileContents, $progressMessage)
     {
         $this->fileContents = $fileContents;
         $this->progressMessage = $progressMessage;
-        $this->dnsUpdateService = $dnsUpdateService;
+        $this->dnsUpdateService = new DnsUpdateService(function ($message) {
+            Log::info($message);
+        });
     }
 
     /**
