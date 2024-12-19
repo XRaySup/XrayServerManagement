@@ -12,7 +12,7 @@ class ProcessIpCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'process:ip {ip}';
+    protected $signature = 'process:ip';
 
     /**
      * The console command description.
@@ -38,11 +38,9 @@ class ProcessIpCommand extends Command
              'text' => 'job started',
          ]);
 
-         dump($message);
         //$dnsUpdateService->processIp($ipAddress);
         $filecontent = file_get_contents(base_path('Xray/bin/ips.csv'));
-        $result = $dnsUpdateService->processFileContent($filecontent,$message);
-        dump( $result['message']);
+        $dnsUpdateService->processFileContent($filecontent,$message);
         return 0;
     }
 }

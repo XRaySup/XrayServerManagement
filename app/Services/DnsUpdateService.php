@@ -79,12 +79,12 @@ class DnsUpdateService
 
     public function handle()
     {
-        $failLimit = 10;
-        $validIps = 0;
+
+
         $telegram = Telegram::bot('mybot');
         $adminIds = explode(',', env('TELEGRAM_ADMIN_IDS'));
         $progressMessages = [];
-        $progressMessageText = 'Running';
+        $progressMessageText = "Checking $this->subdomainPattern :";
         foreach ($adminIds as $adminId) {
 
             $progressMessages[] = $telegram->sendMessage([
@@ -93,32 +93,42 @@ class DnsUpdateService
             ]);
         }
 
+        $progressMessageText = $this->subdomainPattern . $this->DNSCheck();
+
+        foreach ($progressMessages as $progressMessage) {
+
+            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+        }
+    }
+    public function botDNSCheck($progressMessage)
+    {
+
+
+
+        $progressMessageText = "Checking $this->subdomainPattern :";
+        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+
+        $progressMessageText = $this->subdomainPattern . $this->DNSCheck();
+
+        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+
+
+    }
+    public function DNSCheck(): string
+    {
+        $failLimit = 10;
+        $validIps = 0;
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
             $this->logAndError('Cloudflare API Service is not correctly configured.');
-            return;
+            return 'Cloudflare API Service is not correctly configured.';
         }
 
-        //$ips = $this->readCSVFromGoogleDrive('ip.csv');
-        // $file = Storage::disk('google')->get('DNSUpdate/ip.csv');
 
-        // Storage::disk('google')->put('DNSUpdate/ip.csv', '', ['visibility' => 'public']);
-        // $fileResponse = $this->processFileContent($file);
-
-        // if ($fileResponse !== null) {
-
-        //     $progressMessageText .= "\nProcessing ip.csv :\n" . $fileResponse['message'];
-        // } else {
-        //     //$progressMessageText .= "\nip.csv was empty";
-        // }
-        // foreach ($progressMessages as $progressMessage) {
-
-        //     $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-        // }
 
         // Fetch DNS records from Cloudflare API
-        
+
         $dnsRecords = $this->cloudflare->listDnsRecords();
         $totalDNS = 0;
         if ($dnsRecords === false) {
@@ -221,7 +231,7 @@ class DnsUpdateService
         $csvHandle = fopen($this->ipLog, 'w');
         if ($csvHandle === false) {
             $this->logAndError("Failed to open CSV file for writing.");
-            return;
+            return "Failed to open CSV file for writing.";
         }
         fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', 'Response', 'Unexpected Response Count']);
         foreach ($this->ipLogData as $data) {
@@ -247,14 +257,7 @@ class DnsUpdateService
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
-
-
-        $progressMessageText .= "\n$validIps valid IPs are available. Total records are $totalDNS.";
-
-        foreach ($progressMessages as $progressMessage) {
-
-            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-        }
+        return "\n$validIps valid IPs are available. Total records are $totalDNS.";
     }
     private function logAndInfo($message)
     {
@@ -397,13 +400,13 @@ class DnsUpdateService
                 "IPs already in DNS $this->subdomainPattern: $CountDNSExist \n" .
                 "New DNS records added: $countAdded";
             //$this->updateTelegramMessageWithRetry($message, $summaryMessage);
-        // Send progress update to Telegram every 2 seconds
-        //static $lastUpdateTime = 0;
-        $currentTime = time();
-        if ($currentTime - $lastUpdateTime >= 2) {
-            $this->updateTelegramMessageWithRetry($message, $summaryMessage);
-            $lastUpdateTime = $currentTime;
-        }
+            // Send progress update to Telegram every 2 seconds
+            //static $lastUpdateTime = 0;
+            $currentTime = time();
+            if ($currentTime - $lastUpdateTime >= 2) {
+                $this->updateTelegramMessageWithRetry($message, $summaryMessage);
+                $lastUpdateTime = $currentTime;
+            }
         }
 
         // If no valid IPs were processed, return null (or another message)
@@ -414,8 +417,8 @@ class DnsUpdateService
         // Create a success message summarizing the counts if there are valid IPs
         $summaryMessage = "Process complete! \n" .
             "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
-                "IPs with expected 400 response: $CountExpectedResponse400 \n" .
-                "IPs with expected Xray response: $CountExpectedResponse \n" .
+            "IPs with expected 400 response: $CountExpectedResponse400 \n" .
+            "IPs with expected Xray response: $CountExpectedResponse \n" .
             "IPs already in DNS: $CountDNSExist \n" .
             "New DNS records added: $countAdded";
 
@@ -520,7 +523,7 @@ class DnsUpdateService
                         'proxied' => $row[3],
                         'action' => $row[4],
                         'response' => $row[5],
-                        'response_count' => (int)($row[6] ?? 0),
+                        'response_count' => (int) ($row[6] ?? 0),
                     ];
                 }
             }
@@ -567,7 +570,7 @@ class DnsUpdateService
 
         return $success;
     }
-    public  function  processIp($ipAddress): bool
+    public function processIp($ipAddress): bool
     {
         $this->logAndOutput("Checking IP: $ipAddress");
         $result = false;
