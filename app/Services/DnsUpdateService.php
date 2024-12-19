@@ -706,5 +706,6 @@ class DnsUpdateService
         if ($this->consoleOutput) {
             call_user_func($this->consoleOutput, $message);
         }
+        $this->logToFile($this->logFile, $message);
     }
 }
