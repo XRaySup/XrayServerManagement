@@ -8,15 +8,18 @@ use Illuminate\Support\Facades\Http;
 use App\Jobs\ProcessIpsJob;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
+use App\Services\DnsUpdateService;
 
 
 class isegarobotController extends Controller
 {
     private $telegram;
+    protected $dnsUpdateService;
 
-    public function __construct()
+    public function __construct(DnsUpdateService $dnsUpdateService)
     {
         $this->telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+        $this->dnsUpdateService = $dnsUpdateService;
     }
 
     public function handleWebhook(Request $request)
@@ -142,7 +145,7 @@ class isegarobotController extends Controller
                 Log::info('Dispatching ProcessIpsJob.');
 
                 // Dispatch a single job with the entire file contents
-                ProcessIpsJob::dispatch($fileContents, $progressMessage);
+                ProcessIpsJob::dispatch($fileContents, $progressMessage, $this->dnsUpdateService);
 
                 Log::info('ProcessIpsJob dispatched.');
 
