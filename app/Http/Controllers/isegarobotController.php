@@ -145,7 +145,7 @@ class isegarobotController extends Controller
                 Log::info('Dispatching ProcessIpsJob.');
 
                 // Dispatch a single job with the entire file contents
-                ProcessIpsJob::dispatch($fileContents, $progressMessage, $this->dnsUpdateService);
+                ProcessIpsJob::dispatch($fileContents, $progressMessage);
 
                 Log::info('ProcessIpsJob dispatched.');
 
