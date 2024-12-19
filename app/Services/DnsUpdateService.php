@@ -316,6 +316,7 @@ class DnsUpdateService
             ];
         }
         $this->updateTelegramMessageWithRetry($message, $this->subdomainPattern . ' DNS records loaded successfully.');
+        return;
         // Read the file content into an array of lines
         $rows = array_map('trim', explode("\n", $filecontent)); // Use trim to remove any whitespace
 
