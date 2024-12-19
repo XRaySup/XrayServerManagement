@@ -1,5 +1,4 @@
 # Ignore the temp folder and its contents
-temp/*
 .vscode/
 results.csv
 ValidIPs.csv

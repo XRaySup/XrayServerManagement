@@ -623,8 +623,14 @@ class DnsUpdateService
         $command = "$this->xrayExecutable -config $this->tempConfigFile";
         $this->logAndOutput("Running command: $command");
 
-        // Use nohup to start the process and immediately return
-        $process = popen("nohup " . $command . " > /dev/null 2>&1 &", 'r');
+        if (PHP_OS_FAMILY === 'Windows') {
+            // Windows
+            $process = popen("start /B " . $command, 'r');
+        } else {
+            // Unix-like systems
+            $process = popen("nohup " . $command . " > /dev/null 2>&1 &", 'r');
+        }
+
         if (is_resource($process)) {
             $this->logAndOutput("Xray process started successfully.");
             pclose($process);
