@@ -31,11 +31,7 @@ class DnsUpdateService
 
     public function __construct($consoleOutput = null)
     {
-        if (PHP_OS_FAMILY === 'Windows') {
-            $this->xrayExecutable = base_path('Xray/bin/xray.exe');
-        } else {
-            $this->xrayExecutable = base_path('Xray/bin/xray');
-        }
+        $this->determineXrayExecutable();
         $this->xrayConfigFile = base_path('Xray/bin/config.json');
         $this->tempDir = base_path('Xray/temp');
         $this->tempConfigFile = $this->tempDir . '/temp_config.json';
@@ -52,6 +48,35 @@ class DnsUpdateService
         $this->ensureLogExists($this->logFile);
         $this->consoleOutput = $consoleOutput;
     }
+
+    private function determineXrayExecutable()
+    {
+        $baseDir = base_path('Xray/bin');
+        $osFamily = PHP_OS_FAMILY;
+        $architecture = php_uname('m');
+
+        if ($osFamily === 'Windows') {
+            $this->xrayExecutable = "$baseDir/win-64/xray.exe";
+        } elseif ($osFamily === 'Linux') {
+            if ($architecture === 'x86_64') {
+                $this->xrayExecutable = "$baseDir/linux-64/xray";
+            } elseif ($architecture === 'aarch64') {
+                $this->xrayExecutable = "$baseDir/linux-arm64/xray";
+            } else {
+                throw new \Exception("Unsupported architecture: $architecture");
+            }
+        } else {
+            throw new \Exception("Unsupported OS family: $osFamily");
+        }
+
+        if (!file_exists($this->xrayExecutable)) {
+            throw new \Exception("Xray executable not found: $this->xrayExecutable");
+        }
+
+        // Make sure the binary is executable
+        chmod($this->xrayExecutable, 0755);
+    }
+
     public function handle()
     {
         $failLimit = 10;
