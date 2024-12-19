@@ -315,8 +315,8 @@ class DnsUpdateService
                 'message' => 'Could not connect to Cloudflare'
             ];
         }
-        $this->updateTelegramMessageWithRetry($message, env('CLOUDFLARE_DOMAIN') . ' DNS records loaded successfully.');
-        return;
+        //$this->updateTelegramMessageWithRetry($message, env('CLOUDFLARE_DOMAIN') . ' DNS records loaded successfully.');
+        //return;
 
         // Read the file content into an array of lines
         $rows = array_map('trim', explode("\n", $filecontent)); // Use trim to remove any whitespace
