@@ -21,13 +21,27 @@ class DnsUpdateService
     protected $cloudflare;
     protected $ipLogData;
     protected $ipLog;
+    private $xrayExecutable;
+    private $xrayConfigFile;
+    private $tempDir;
+    private $tempConfigFile;
+    private $outputCsv;
+    private $validIpsCsv;
+    private $fileSize = 102400;
+    private $consoleOutput;
 
-    public function __construct()
+    public function __construct($consoleOutput = null)
     {
-        //parent::__construct();
-
-        //$this->zoneId = env('CLOUDFLARE_ZONE_ID');
-        //$this->apiToken = env('CLOUDFLARE_API_TOKEN');
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->xrayExecutable = base_path('script/bin/xray.exe');
+        }else{
+            $this->xrayExecutable = base_path('script/bin/xray');
+        }
+        $this->xrayConfigFile = base_path('script/bin/config.json');
+        $this->tempDir = base_path('script/temp');
+        $this->tempConfigFile = $this->tempDir . '/temp_config.json';
+        $this->outputCsv = base_path('script/results.csv');
+        $this->validIpsCsv = base_path('script/ValidIPs.csv');
         $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_DOMAIN');
         $this->logFile = base_path('storage/logs/dns_update.log');
 
@@ -37,6 +51,7 @@ class DnsUpdateService
 
         $this->ipLogData = $this->loadIpLogData();
         $this->ensureLogExists($this->logFile);
+        $this->consoleOutput = $consoleOutput;
     }
     public function handle()
     {
@@ -255,11 +270,19 @@ class DnsUpdateService
     }
     public function processFileContent($filecontent)
     {
-
         $CountDNSExist = 0;
         $CountExpectedResponse = 0;
         $countIps = 0;
         $countAdded = 0;
+
+        // Clear the results.csv file and add a header
+        $resultsCsvHandle = fopen($this->outputCsv, 'w');
+        if ($resultsCsvHandle === false) {
+            $this->logAndError("Failed to open results.csv file for writing.");
+            return;
+        }
+        fputcsv($resultsCsvHandle, ['IP Address', 'HTTP Check', 'Xray Check', 'Download Time (ms)', 'File Size']);
+        fclose($resultsCsvHandle);
 
         // Load DNS records once
         $dnsRecords = $this->cloudflare->listDnsRecords();
@@ -271,25 +294,47 @@ class DnsUpdateService
             ];
         }
 
-        // Read the file content into an array of IPs
+        // Read the file content into an array of lines
         $rows = array_map('trim', explode("\n", $filecontent)); // Use trim to remove any whitespace
-        //$this->logAndInfo(implode(',', $rows));
-        $ipsToCheck = array_filter($rows); // Remove any empty lines
-        //$this->logAndInfo(implode(',', $ipsToCheck));
+
+        // Remove the first row if it contains headers
+        if (isset($rows[0]) && strpos($rows[0], 'IP地址') !== false) {
+            array_shift($rows);
+        }
+
+        // Extract IPs from the first column
+        $ipsToCheck = [];
+        foreach ($rows as $row) {
+            $columns = str_getcsv($row);
+            if (isset($columns[0])) {
+                $ipsToCheck[] = $columns[0];
+            }
+        }
+
+        // Remove any empty lines
+        $ipsToCheck = array_filter($ipsToCheck);
+        //dump($ipsToCheck);
+        // Log the IPs to check
+        //$this->logAndOutput("IPs to check: " . implode(', ', $ipsToCheck));
 
         // Check the IP responses
         $ipResults = $this->check_ip_responses($ipsToCheck);
-
+        //dump($ipResults);
         foreach ($ipsToCheck as $ip) {
+
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 $countIps++;
                 $ExpectedResponse = $ipResults[$ip] ?? false; // Get the response from the array
+                // Process each IP
 
                 if ($ExpectedResponse) {
+                    $ExpectedResponse = $this->processIp($ip);
+                    if ($ExpectedResponse) {
                     $CountExpectedResponse++;
+                    }
                 }
-
+                
                 // Check if the IP exists in the DNS records
                 $ExistInDNS = false;
                 foreach ($dnsRecords as $record) {
@@ -334,7 +379,7 @@ class DnsUpdateService
                 'countIps' => $countIps,
                 'countAdded' => $countAdded
             ]
-        ];
+        ];    
     }
     private function check_ip_responses(array $ipAddresses)
     {
@@ -469,5 +514,122 @@ class DnsUpdateService
         }
 
         return $success;
+    }
+    public  function  processIp($ipAddress): bool
+    {
+        $this->logAndOutput("Checking IP: $ipAddress");
+
+
+            $this->logAndOutput("IP $ipAddress passed HTTP check. Starting Xray check...");
+
+            // Encode IP in Base64 format
+            $base64Ip = base64_encode($ipAddress);
+
+            // Update the Xray config with the Base64 IP
+            $configContent = file_get_contents($this->xrayConfigFile);
+            $updatedConfig = str_replace('PROXYIP', $base64Ip, $configContent);
+            file_put_contents($this->tempConfigFile, $updatedConfig);
+
+            // Run Xray in the background and perform 204 check
+            $this->runXray();
+            sleep(1);
+            $this->logAndOutput("after sleep");
+            // Perform the 204 No Content check via Xray proxy
+            $xrayCheck = $this->curlRequest("https://cp.cloudflare.com/generate_204", 1, true);
+            //$this->logAndOutput('204 Check Response is: ' . $xrayCheck);  // Log the response            
+            if ($xrayCheck == "204") {
+                //$this->logAndOutput("204 Check Response is: $xrayCheck");
+
+                // Download Test
+                $downloadTime = $this->downloadTest();
+
+                // Check if the downloaded file size matches the requested size
+                $actualFileSize = filesize("$this->tempDir/temp_downloaded_file");
+
+                if ($actualFileSize == $this->fileSize) {
+                    $this->logAndOutput("Downloaded file size matches the requested size.");
+                    file_put_contents($this->validIpsCsv, "$ipAddress\n", FILE_APPEND);
+                    $this->recordResult($ipAddress, '400', $xrayCheck, $downloadTime, $actualFileSize);
+                    $this->stopXray();
+                    return true;    
+                } else {
+                    $this->logAndOutput("Warning: Downloaded file size does not match the requested size.");
+                }
+
+                // Record result in CSV
+                //$this->recordResult($ipAddress, '400', $xrayCheck, $downloadTime, $actualFileSize);
+
+                // Clean up temporary file
+                unlink("$this->tempDir/temp_downloaded_file");
+            } else {
+                //$this->recordResult($ipAddress, '400', $xrayCheck, '-', '-');
+            }
+
+            // Stop Xray process
+            $this->stopXray();
+
+        return false;
+    }
+
+    private function curlRequest($url, $timeout, $useProxy = false)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+        if ($useProxy) {
+            curl_setopt($ch, CURLOPT_PROXY, "http://127.0.0.1:8080");
+        }
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return $httpCode;
+    }
+
+    private function runXray()
+    {
+        $command = "$this->xrayExecutable run -config $this->tempConfigFile";
+        $this->logAndOutput("Running command: $command");
+    
+        // Use popen to start the process and immediately return
+        $process = popen("start /b " . $command, 'r');
+        if (is_resource($process)) {
+            $this->logAndOutput("Xray process started successfully.");
+            pclose($process);
+        } else {
+            $this->logAndOutput("Failed to start the xray process.");
+        }
+    }
+
+    private function stopXray()
+    {
+        exec("taskkill /f /im xray.exe > nul 2>&1");
+    }
+
+    private function downloadTest()
+    {
+        $outputFile = "$this->tempDir/temp_output.txt";
+        exec("powershell -command \"& {curl.exe -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $this->tempDir/temp_downloaded_file}\" > $outputFile");
+
+        $downloadTime = 0;
+        $output = file_get_contents($outputFile);
+        if (preg_match('/TIME: (\d+\.\d+)/', $output, $matches)) {
+            $downloadTime = round($matches[1] * 1000); // Convert to milliseconds
+        }
+        return $downloadTime;
+    }
+
+    private function recordResult($ipAddress, $httpCheck, $xrayCheck, $downloadTime, $fileSize)
+    {
+        $result = "$ipAddress,$httpCheck,$xrayCheck,$downloadTime,$fileSize\n";
+        file_put_contents($this->outputCsv, $result, FILE_APPEND);
+    }
+
+    private function logAndOutput($message)
+    {
+        Log::info($message);
+        if ($this->consoleOutput) {
+            call_user_func($this->consoleOutput, $message);
+        }
     }
 }
