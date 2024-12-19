@@ -84,12 +84,12 @@ class isegarobotController extends Controller
                     // Send initial message about processing start
                     $initialReply = "Running the command.";
                     $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
-                    dispatch(function () use ($progressMessage) {
+
                         $dnsUpdateService = new DnsUpdateService(function ($message) {
                             $this->info($message);
                         });
                         $dnsUpdateService->botDNSCheck($progressMessage);
-                    });
+
                     $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
