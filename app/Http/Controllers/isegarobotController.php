@@ -64,10 +64,7 @@ class isegarobotController extends Controller
                 $filePath = $file->getFilePath();
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
                 $fileContents = Http::get($fileUrl)->body();
-                Log::info('File contents: ' . print_r($fileContents, true));
-                //$this->sendReply($chatId, $messageId, 'file read');
-                // Process file contents as CSV
-                //$rows = array_map('str_getcsv', explode("\n", $fileContents));
+                //Log::info('File contents: ' . print_r($fileContents, true));
     
                 // Dispatch a single job with the entire file contents
                 
@@ -84,9 +81,9 @@ class isegarobotController extends Controller
         } else {
             if (isset($message['text'])) {
                 if ($message['text'] === 'Run') {
-                    $this->sendReply($chatId, $messageId, "before DNS update command has been executed.");
+                    //$this->sendReply($chatId, $messageId, "before DNS update command has been executed.");
                     Artisan::call('dns:update');
-                    $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
+                    //$this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
                 }

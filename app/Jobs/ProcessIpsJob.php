@@ -35,9 +35,9 @@ class ProcessIpsJob implements ShouldQueue
      */
     public function handle()
     {
-        Log::info('ProcessIpsJob started.');
-        Log::info('File contents: ' . print_r($this->fileContents, true));
-        Log::info('Progress message: ' . $this->progressMessage);
+        //Log::info('ProcessIpsJob started.');
+        //Log::info('File contents: ' . print_r($this->fileContents, true));
+        //Log::info('Progress message: ' . $this->progressMessage);
 
         // Instantiate DnsUpdateService within the handle method
         $dnsUpdateService = new DnsUpdateService(function ($message) {
@@ -47,6 +47,6 @@ class ProcessIpsJob implements ShouldQueue
         // Process the file content using DnsUpdateService
         $dnsUpdateService->processFileContent($this->fileContents, $this->progressMessage);
 
-        Log::info('ProcessIpsJob completed.');
+        //Log::info('ProcessIpsJob completed.');
     }
 }
