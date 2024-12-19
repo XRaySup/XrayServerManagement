@@ -81,7 +81,7 @@ class isegarobotController extends Controller
             }
         } else {
             if (isset($message['text'])) {
-                if ($message['text'] === '\testDNS') {
+                if ($message['text'] === '/testdns') {
                     // Send initial message about processing start
                     $initialReply = "Running the command.";
                     
