@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+
 use Telegram\Bot\Laravel\Facades\Telegram;
 //use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -14,8 +15,6 @@ use App\Services\CloudflareApiService;
 
 class DnsUpdateService
 {
-    protected $zoneId;
-    protected $apiToken;
     protected $logFile;
     protected $subdomainPattern;
     protected $cloudflare;
@@ -33,15 +32,15 @@ class DnsUpdateService
     public function __construct($consoleOutput = null)
     {
         if (PHP_OS_FAMILY === 'Windows') {
-            $this->xrayExecutable = base_path('script/bin/xray.exe');
-        }else{
-            $this->xrayExecutable = base_path('script/bin/xray');
+            $this->xrayExecutable = base_path('Xray/bin/xray.exe');
+        } else {
+            $this->xrayExecutable = base_path('Xray/bin/xray');
         }
-        $this->xrayConfigFile = base_path('script/bin/config.json');
-        $this->tempDir = base_path('script/temp');
+        $this->xrayConfigFile = base_path('Xray/bin/config.json');
+        $this->tempDir = base_path('Xray/temp');
         $this->tempConfigFile = $this->tempDir . '/temp_config.json';
-        $this->outputCsv = base_path('script/results.csv');
-        $this->validIpsCsv = base_path('script/ValidIPs.csv');
+        $this->outputCsv = base_path('Xray/results.csv');
+        $this->validIpsCsv = base_path('Xray/ValidIPs.csv');
         $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_DOMAIN');
         $this->logFile = base_path('storage/logs/dns_update.log');
 
@@ -68,8 +67,7 @@ class DnsUpdateService
                 'text' => $progressMessageText,
             ]);
         }
-        //print_r($progressMessageIds);
-        //return;
+
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
@@ -78,25 +76,22 @@ class DnsUpdateService
         }
 
         //$ips = $this->readCSVFromGoogleDrive('ip.csv');
-        $file = Storage::disk('google')->get('DNSUpdate/ip.csv');
+        // $file = Storage::disk('google')->get('DNSUpdate/ip.csv');
 
-        Storage::disk('google')->put('DNSUpdate/ip.csv', '', ['visibility' => 'public']);
-        $fileResponse = $this->processFileContent($file);
+        // Storage::disk('google')->put('DNSUpdate/ip.csv', '', ['visibility' => 'public']);
+        // $fileResponse = $this->processFileContent($file);
 
-        if ($fileResponse !== null) {
+        // if ($fileResponse !== null) {
 
-            $progressMessageText .= "\nProcessing ip.csv :\n" . $fileResponse['message'];
-        } else {
-            $progressMessageText .= "\nip.csv was empty";
-        }
-        foreach ($progressMessages as $progressMessage) {
+        //     $progressMessageText .= "\nProcessing ip.csv :\n" . $fileResponse['message'];
+        // } else {
+        //     //$progressMessageText .= "\nip.csv was empty";
+        // }
+        // foreach ($progressMessages as $progressMessage) {
 
-            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-        }
-        //return;
+        //     $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+        // }
 
-
-        //isegarobotController::replyIps($ipResults, '');
         // Fetch DNS records from Cloudflare API
         $dnsRecords = $this->cloudflare->listDnsRecords();
         $totalDNS = 0;
@@ -109,8 +104,7 @@ class DnsUpdateService
 
         // Now check the responses for all collected IPs
         $ipResults = $this->check_ip_responses($ipsToCheck); // Check all IPs at once
-        //print_r($ipResults);
-        //return;
+
 
         foreach ($dnsRecords as $record) {
 
@@ -268,12 +262,14 @@ class DnsUpdateService
         $fileContent = File::get($localFilePath);
         Storage::disk('google')->put($remoteFilePath, $fileContent, ['visibility' => 'public']);
     }
-    public function processFileContent($filecontent)
+    public function processFileContent($filecontent, $message)
     {
         $CountDNSExist = 0;
         $CountExpectedResponse = 0;
         $countIps = 0;
         $countAdded = 0;
+        $totaIpsToCheck = 0;
+        $CountExpectedResponse400 = 0;
 
         // Clear the results.csv file and add a header
         $resultsCsvHandle = fopen($this->outputCsv, 'w');
@@ -316,45 +312,70 @@ class DnsUpdateService
         //dump($ipsToCheck);
         // Log the IPs to check
         //$this->logAndOutput("IPs to check: " . implode(', ', $ipsToCheck));
-
+        $totaIpsToCheck = count($ipsToCheck);
         // Check the IP responses
         $ipResults = $this->check_ip_responses($ipsToCheck);
         //dump($ipResults);
+        $lastUpdateTime = time();
         foreach ($ipsToCheck as $ip) {
-
+            $countIps++;
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                $countIps++;
-                $ExpectedResponse = $ipResults[$ip] ?? false; // Get the response from the array
+                $ExpectedResponse = false;
+                $ExpectedResponse400 = $ipResults[$ip] ?? false; // Get the response from the array
                 // Process each IP
 
-                if ($ExpectedResponse) {
+                if ($ExpectedResponse400) {
+                    $CountExpectedResponse400 += 1;
                     $ExpectedResponse = $this->processIp($ip);
+                    //$this->logAndOutput("IP $ExpectedResponse passed all checks.");
                     if ($ExpectedResponse) {
-                    $CountExpectedResponse++;
-                    }
-                }
-                
-                // Check if the IP exists in the DNS records
-                $ExistInDNS = false;
-                foreach ($dnsRecords as $record) {
-                    if ($record['content'] === $ip) {
-                        $ExistInDNS = true;
-                        break;
+                        //$this->logAndOutput("IP $ip passed all checks.");
+                        $CountExpectedResponse++;
+
+                        // Check if the IP exists in the DNS records
+                        $ExistInDNS = false;
+                        foreach ($dnsRecords as $record) {
+                            if ($record['content'] === $ip) {
+                                $ExistInDNS = true;
+
+                                break;
+                            }
+                        }
+
+                        if ($ExistInDNS) {
+                            $CountDNSExist++;
+                            //$this->logAndOutput("IP $ip already exists in DNS");
+                            continue;
+                        } else {
+                            $this->logAndOutput("IP $ip does not exist in DNS");
+                        }
                     }
                 }
 
-                if ($ExistInDNS) {
-                    $CountDNSExist++;
-                    continue;
-                }
 
                 // Add DNS record if the expected response is true and IP doesn't exist in DNS
-                if ($ExpectedResponse) {
+                if ($ExpectedResponse && !$ExistInDNS) {
                     $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
+                    $this->logAndOutput("add to dns.");
                     $countAdded++;
                 }
             }
+            $progress = round(($countIps / $totaIpsToCheck) * 100, 2);
+            $summaryMessage = "Process Running! $progress % \n" .
+                "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
+                "IPs with expected 400 response: $CountExpectedResponse400 \n" .
+                "IPs with expected Xray response: $CountExpectedResponse \n" .
+                "IPs already in DNS: $CountDNSExist \n" .
+                "New DNS records added: $countAdded";
+            //$this->updateTelegramMessageWithRetry($message, $summaryMessage);
+        // Send progress update to Telegram every 2 seconds
+        //static $lastUpdateTime = 0;
+        $currentTime = time();
+        if ($currentTime - $lastUpdateTime >= 2) {
+            $this->updateTelegramMessageWithRetry($message, $summaryMessage);
+            $lastUpdateTime = $currentTime;
+        }
         }
 
         // If no valid IPs were processed, return null (or another message)
@@ -364,10 +385,13 @@ class DnsUpdateService
 
         // Create a success message summarizing the counts if there are valid IPs
         $summaryMessage = "Process complete! \n" .
-            "Total valid IPs checked: $countIps \n" .
-            "IPs with expected response: $CountExpectedResponse \n" .
+            "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
+                "IPs with expected 400 response: $CountExpectedResponse400 \n" .
+                "IPs with expected Xray response: $CountExpectedResponse \n" .
             "IPs already in DNS: $CountDNSExist \n" .
             "New DNS records added: $countAdded";
+
+        $this->updateTelegramMessageWithRetry($message, $summaryMessage);
 
         // Return success with status, summary message, and count details
         return [
@@ -379,7 +403,7 @@ class DnsUpdateService
                 'countIps' => $countIps,
                 'countAdded' => $countAdded
             ]
-        ];    
+        ];
     }
     private function check_ip_responses(array $ipAddresses)
     {
@@ -518,57 +542,65 @@ class DnsUpdateService
     public  function  processIp($ipAddress): bool
     {
         $this->logAndOutput("Checking IP: $ipAddress");
+        $result = false;
 
 
-            $this->logAndOutput("IP $ipAddress passed HTTP check. Starting Xray check...");
+        $this->logAndOutput("IP $ipAddress passed HTTP check. Starting Xray check...");
 
-            // Encode IP in Base64 format
-            $base64Ip = base64_encode($ipAddress);
+        // Encode IP in Base64 format
+        $base64Ip = base64_encode($ipAddress);
 
-            // Update the Xray config with the Base64 IP
-            $configContent = file_get_contents($this->xrayConfigFile);
-            $updatedConfig = str_replace('PROXYIP', $base64Ip, $configContent);
-            file_put_contents($this->tempConfigFile, $updatedConfig);
+        // Update the Xray config with the Base64 IP
+        $configContent = file_get_contents($this->xrayConfigFile);
+        $updatedConfig = str_replace('PROXYIP', $base64Ip, $configContent);
+        file_put_contents($this->tempConfigFile, $updatedConfig);
 
-            // Run Xray in the background and perform 204 check
-            $this->runXray();
-            sleep(1);
-            $this->logAndOutput("after sleep");
-            // Perform the 204 No Content check via Xray proxy
-            $xrayCheck = $this->curlRequest("https://cp.cloudflare.com/generate_204", 1, true);
-            //$this->logAndOutput('204 Check Response is: ' . $xrayCheck);  // Log the response            
-            if ($xrayCheck == "204") {
-                //$this->logAndOutput("204 Check Response is: $xrayCheck");
+        // Run Xray in the background and perform 204 check
+        $this->runXray();
+        sleep(1);
+        $this->logAndOutput("after sleep");
+        // Perform the 204 No Content check via Xray proxy
+        $xrayCheck = $this->curlRequest("https://cp.cloudflare.com/generate_204", 1, true);
+        $this->logAndOutput('204 Check Response is: ' . $xrayCheck);  // Log the response            
+        if ($xrayCheck == "204") {
+            //$this->logAndOutput("204 Check Response is: $xrayCheck");
 
-                // Download Test
-                $downloadTime = $this->downloadTest();
+            // Download Test
+            $downloadTime = $this->downloadTest();
 
-                // Check if the downloaded file size matches the requested size
-                $actualFileSize = filesize("$this->tempDir/temp_downloaded_file");
-
+            // Check if the downloaded file size matches the requested size
+            $downloadedFilePath = "$this->tempDir/temp_downloaded_file";
+            $actualFileSize = 0; // Initialize the variable
+            if (file_exists($downloadedFilePath)) {
+                $actualFileSize = filesize($downloadedFilePath);
                 if ($actualFileSize == $this->fileSize) {
                     $this->logAndOutput("Downloaded file size matches the requested size.");
                     file_put_contents($this->validIpsCsv, "$ipAddress\n", FILE_APPEND);
-                    $this->recordResult($ipAddress, '400', $xrayCheck, $downloadTime, $actualFileSize);
-                    $this->stopXray();
-                    return true;    
+                    $result = true;
                 } else {
-                    $this->logAndOutput("Warning: Downloaded file size does not match the requested size.");
+                    $this->logAndOutput("Downloaded file size does not match the requested size.");
                 }
-
-                // Record result in CSV
-                //$this->recordResult($ipAddress, '400', $xrayCheck, $downloadTime, $actualFileSize);
-
-                // Clean up temporary file
-                unlink("$this->tempDir/temp_downloaded_file");
             } else {
-                //$this->recordResult($ipAddress, '400', $xrayCheck, '-', '-');
+                $this->logAndOutput("Downloaded file does not exist.");
             }
 
-            // Stop Xray process
-            $this->stopXray();
+            // Record result in CSV
+            $this->recordResult($ipAddress, '400', $xrayCheck, $downloadTime, $actualFileSize);
 
-        return false;
+            // Clean up temporary file
+            if (file_exists($downloadedFilePath)) {
+                unlink($downloadedFilePath);
+            } else {
+                $this->logAndOutput("Temporary file does not exist, no need to delete.");
+            }
+        } else {
+            // Handle the case where the 204 check fails
+        }
+        $this->logAndOutput("closing the xray.");
+        // Stop Xray process
+        $this->stopXray();
+
+        return $result;
     }
 
     private function curlRequest($url, $timeout, $useProxy = false)
@@ -588,11 +620,11 @@ class DnsUpdateService
 
     private function runXray()
     {
-        $command = "$this->xrayExecutable run -config $this->tempConfigFile";
+        $command = "$this->xrayExecutable -config $this->tempConfigFile";
         $this->logAndOutput("Running command: $command");
-    
-        // Use popen to start the process and immediately return
-        $process = popen("start /b " . $command, 'r');
+
+        // Use nohup to start the process and immediately return
+        $process = popen("nohup " . $command . " > /dev/null 2>&1 &", 'r');
         if (is_resource($process)) {
             $this->logAndOutput("Xray process started successfully.");
             pclose($process);
@@ -603,13 +635,25 @@ class DnsUpdateService
 
     private function stopXray()
     {
-        exec("taskkill /f /im xray.exe > nul 2>&1");
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows
+            exec("taskkill /F /IM xray.exe");
+        } else {
+            // Linux
+            exec("pkill -f xray");
+        }
     }
 
     private function downloadTest()
     {
         $outputFile = "$this->tempDir/temp_output.txt";
-        exec("powershell -command \"& {curl.exe -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $this->tempDir/temp_downloaded_file}\" > $outputFile");
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows
+            exec("powershell -command \"& {curl.exe -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $this->tempDir/temp_downloaded_file}\" > $outputFile");
+        } else {
+            // Linux
+            exec("curl -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $this->tempDir/temp_downloaded_file > $outputFile");
+        }
 
         $downloadTime = 0;
         $output = file_get_contents($outputFile);

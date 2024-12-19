@@ -10,6 +10,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Exception;
 
 class Server extends Model
 {
