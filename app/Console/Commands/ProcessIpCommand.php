@@ -34,9 +34,10 @@ class ProcessIpCommand extends Command
          });
          $telegram = Telegram::bot('mybot');
          $message = $telegram->sendMessage([
-             'chat_id' => env('TELEGRAM_ADMIN_IDS'),
+             'chat_id' => env('TELEGRAM_TEST_ADMIN_IDS'),
              'text' => 'job started',
          ]);
+
          dump($message);
         //$dnsUpdateService->processIp($ipAddress);
         $filecontent = file_get_contents(base_path('Xray/bin/ips.csv'));
