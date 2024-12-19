@@ -80,6 +80,7 @@ class isegarobotController extends Controller
         } else {
             if (isset($message['text'])) {
                 if ($message['text'] === 'Run') {
+                    $this->sendReply($chatId, $messageId, "before DNS update command has been executed.");
                     Artisan::call('dns:update');
                     $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
