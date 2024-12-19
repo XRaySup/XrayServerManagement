@@ -43,7 +43,7 @@ class ProcessIpsJob implements ShouldQueue
                 $forwardedFrom = $this->fileContent['forwarded_from'];
                 Log::info("File forwarded from: " . $forwardedFrom);
             }
-
+            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, 'Processing file...');
             $fileResponse = $dnsUpdateService->processFileContent($this->fileContent, $this->progressMessage);
 
             $progressMessageText = '';
