@@ -64,6 +64,7 @@ class isegarobotController extends Controller
                 $filePath = $file->getFilePath();
                 $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
                 $fileContents = Http::get($fileUrl)->body();
+                Log::info('File contents: ' . print_r($fileContents, true));
                 //$this->sendReply($chatId, $messageId, 'file read');
                 // Process file contents as CSV
                 //$rows = array_map('str_getcsv', explode("\n", $fileContents));
