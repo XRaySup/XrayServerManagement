@@ -74,7 +74,7 @@ class DnsUpdateService
         }
 
         // Make sure the binary is executable
-        chmod($this->xrayExecutable, 0755);
+        //chmod($this->xrayExecutable, 0755);
     }
 
     public function handle()
