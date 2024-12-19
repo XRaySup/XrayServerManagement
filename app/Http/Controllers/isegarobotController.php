@@ -115,13 +115,44 @@ class isegarobotController extends Controller
 
     public function processIps(Request $request)
     {
-        $fileContents = $request->input('fileContents');
-        $progressMessage = $request->input('progressMessage');
+        $message = $request->input('message');
+        $chatId = $message['chat']['id'];
+        $messageId = $message['message_id'];
 
-        Log::info('Dispatching ProcessIpsJob.');
-        ProcessIpsJob::dispatch($fileContents, $progressMessage);
-        Log::info('ProcessIpsJob dispatched.');
+        // Continue if the user is an admin
+        if (isset($message['document'])) {
+            $fileId = $message['document']['file_id'];
 
-        return response()->json(['status' => 'Job dispatched']);
+            // Send initial message about processing start
+            $initialReply = "Your file is being processed.";
+            $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
+
+            if (!$progressMessage) {
+                return response()->json(['status' => 'error', 'message' => 'Failed to send initial reply'], 500);
+            }
+
+            try {
+                // Download the file from Telegram
+                $file = $this->telegram->getFile(['file_id' => $fileId]);
+                $filePath = $file->getFilePath();
+                $fileUrl = "https://api.telegram.org/file/bot" . env('TELEGRAM_BOT_TOKEN') . "/$filePath";
+                $fileContents = Http::get($fileUrl)->body();
+
+                Log::info('File downloaded from Telegram.');
+                Log::info('Dispatching ProcessIpsJob.');
+
+                // Dispatch a single job with the entire file contents
+                ProcessIpsJob::dispatch($fileContents, $progressMessage);
+
+                Log::info('ProcessIpsJob dispatched.');
+
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                Log::error('Telegram API error: ' . $e->getMessage());
+                $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
+            } catch (\Exception $e) {
+                Log::error('General error: ' . $e->getMessage());
+                $this->sendReply($chatId, $messageId, "Error: {$e->getMessage()}");
+            }
+        }
     }
 }
