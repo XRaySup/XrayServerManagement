@@ -85,10 +85,7 @@ class isegarobotController extends Controller
                     $initialReply = "Running the command.";
                     $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
                     dispatch(function () use ($progressMessage) {
-                        $dnsUpdateService = new DnsUpdateService(function ($message) {
-                            $this->info($message);
-                        });
-                        $dnsUpdateService->botDNSCheck($progressMessage);
+                        $this->dnsUpdateService->botDNSCheck($progressMessage);
                     });
                     $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
