@@ -7,8 +7,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-//use App\Console\Commands\RunDnsUpdate;
-//use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use App\Services\DnsUpdateService;
@@ -17,46 +15,33 @@ class ProcessIpsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 900; // Set timeout to 15 minutes
-    //protected $chatId;
-    protected $fileContent;
+    protected $fileContents;
     protected $progressMessage;
 
-
-    public function __construct($fileContent, $progressMessage)
+    /**
+     * Create a new job instance.
+     *
+     * @return void
+     */
+    public function __construct($fileContents, $progressMessage)
     {
-        $this->fileContent = $fileContent;
-        //$this->chatId = $chatId;
+        $this->fileContents = $fileContents;
         $this->progressMessage = $progressMessage;
-
     }
 
-    public function handle(DnsUpdateService $dnsUpdateService)
+    /**
+     * Execute the job.
+     *
+     * @return void
+     */
+    public function handle()
     {
-        try {
-            $dnsUpdateService = new DnsUpdateService(function ($message) {
-                Log::info($message);
-            });
+        Log::info('ProcessIpsJob started.');
+        Log::info('File contents: ' . print_r($this->fileContents, true));
+        Log::info('Progress message: ' . $this->progressMessage);
 
-            // Check if the file content is from a forwarded message
-            if (isset($this->fileContent['forwarded_from'])) {
-                $forwardedFrom = $this->fileContent['forwarded_from'];
-                Log::info("File forwarded from: " . $forwardedFrom);
-            }
-            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, 'Processing file...');
-            $fileResponse = $dnsUpdateService->processFileContent($this->fileContent, $this->progressMessage);
+        // Add your processing logic here
 
-            $progressMessageText = '';
-            if ($fileResponse !== null) {
-                $progressMessageText .= "\nProcessing file :\n" . $fileResponse['message'];
-            } else {
-                $progressMessageText .= "\nFile was empty!";
-            }
-
-            $dnsUpdateService->updateTelegramMessageWithRetry($this->progressMessage, $progressMessageText);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to process IPs: ' . $e->getMessage());
-        }
+        Log::info('ProcessIpsJob completed.');
     }
 }
