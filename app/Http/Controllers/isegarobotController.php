@@ -7,8 +7,8 @@ use Telegram\Bot\Api;
 use Illuminate\Support\Facades\Http;
 use App\Jobs\ProcessIpsJob;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Artisan;
 use App\Services\DnsUpdateService;
+
 
 
 class isegarobotController extends Controller
@@ -84,7 +84,9 @@ class isegarobotController extends Controller
                     // Send initial message about processing start
                     $initialReply = "Running the command.";
                     $progressMessage = $this->sendReply($chatId, $messageId, $initialReply);
-                    dispatch(new \App\Jobs\DnsCheckJob($progressMessage));
+                    dispatch(function () use ($progressMessage) {
+                        $this->dnsUpdateService->botDNSCheck($progressMessage);
+                    });
                     $this->sendReply($chatId, $messageId, "DNS update command has been executed.");
                 } else {
                     $this->sendReply($chatId, $messageId, "No file received.");
