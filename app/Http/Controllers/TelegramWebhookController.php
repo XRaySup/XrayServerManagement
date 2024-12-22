@@ -12,6 +12,8 @@ class TelegramWebhookController extends Controller
     {
         try {
             // Dispatch the job to handle the message
+            log::info('TelegramWebhookController: handle');
+            log::info  ('Request: ' . print_r($request->all(), true));
             HandleTelegramMessage::dispatch($request->all());
 
             return response()->json(['status' => 'ok']);
