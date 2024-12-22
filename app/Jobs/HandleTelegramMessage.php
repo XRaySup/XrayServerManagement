@@ -243,7 +243,7 @@ class HandleTelegramMessage implements ShouldQueue
     }
     public function updateTelegramMessageWithRetry($message, $text, $maxRetries = 3)
     {
-        $telegram = Telegram::bot('mybot'); // Initialize the Telegram bot
+        //$telegram = Telegram::bot('mybot'); // Initialize the Telegram bot
 
         // Extract chat ID and message ID from the message object
         $chatId = $message->getChat()->getId();
@@ -255,7 +255,7 @@ class HandleTelegramMessage implements ShouldQueue
         while (!$success && $retryCount < $maxRetries) {
             try {
                 // Update the message using the Telegram API
-                $telegram->editMessageText([
+                $this->telegram->editMessageText([
                     'chat_id' => $chatId,
                     'message_id' => $messageId,
                     'text' => $text,
@@ -263,7 +263,7 @@ class HandleTelegramMessage implements ShouldQueue
                 $success = true; // Exit the loop if successful
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 $retryCount++;
-                $this->logAndError("Telegram API error while updating message (attempt $retryCount): " . $e->getMessage());
+                Log::info("Telegram API error while updating message (attempt $retryCount): " . $e->getMessage());
 
                 // Retry if it's a rate limit error or a recoverable error
                 if ($e->getCode() == 429 || $retryCount < $maxRetries) {
@@ -275,7 +275,7 @@ class HandleTelegramMessage implements ShouldQueue
         }
 
         if (!$success) {
-            $this->logAndError("Failed to update message on Telegram after {$maxRetries} attempts.");
+            Log::info("Failed to update message on Telegram after {$maxRetries} attempts.");
         }
 
         return $success;
