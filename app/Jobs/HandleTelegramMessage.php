@@ -139,7 +139,8 @@ class HandleTelegramMessage implements ShouldQueue
                 case '/Yesterday':
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
-                    $reply = "*Remark* | *Usage (GB)*\n--- | ---\n";
+                    $reply = "*Yesterday* \n";
+                    $reply .= "*Remark* | *Usage (GB)*\n--- | ---\n";
                     $totalUsage = 0;
                     foreach ($servers as $server) {
                         if ($server->status == "ONLINE") {
@@ -150,10 +151,11 @@ class HandleTelegramMessage implements ShouldQueue
                     }
                     $reply .= "Total | *{$totalUsage}* \n";
                     break;
-                case '/today':
+                case '/Today':
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
-                    $reply = "*Remark* | *Usage (GB)*\n--- | ---\n";
+                    $reply = "*Today* \n";
+                    $reply .= "*Remark* | *Usage (GB)*\n--- | ---\n";
                     $totalUsage = 0;
                     foreach ($servers as $server) {
                         if ($server->status == "ONLINE") {
@@ -213,6 +215,7 @@ class HandleTelegramMessage implements ShouldQueue
                 'chat_id' => $chatId,
                 'reply_to_message_id' => $messageId,
                 'text' => $text,
+                'parse_mode' => 'Markdown',
             ]);
             return $response;
         } catch (\Exception $e) {
