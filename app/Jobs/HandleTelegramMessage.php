@@ -64,9 +64,9 @@ class HandleTelegramMessage implements ShouldQueue
         // Implement the handleFreeXrayBotMessage method
         Log::info('Handling FreeXrayBot message.');
         // Add your logic here
-        $this->sendReply('Hello from FreeXrayBot!');
+        //$this->sendReply('Hello from FreeXrayBot!');
         if($this->checkUser(env('TELEGRAM_XADMIN_IDS'))){
-            $this->sendReply('You are admin!');
+            //$this->sendReply('You are admin!');
         }
         $message = $this->requestData['message'];
         $reply = '';
