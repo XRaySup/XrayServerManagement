@@ -77,7 +77,7 @@ class HandleTelegramMessage implements ShouldQueue
         $reply = '';
         if (isset($message['text'])) {
             switch ($message['text']) {
-                case '/Yesterday':
+                case '/yesterday':
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
                     $reply = "*Yesterday* \n";
@@ -92,7 +92,7 @@ class HandleTelegramMessage implements ShouldQueue
                     }
                     $reply .= "Total | *{$totalUsage}* \n";
                     break;
-                case '/Today':
+                case '/today':
                     $servers = Server::all();
                     // Prepare the table message in Markdown format
                     $reply = "*Today* \n";
