@@ -533,7 +533,7 @@ class DnsUpdateService
     }
     public function updateTelegramMessageWithRetry($message, $text, $maxRetries = 3)
     {
-        $telegram = Telegram::bot('mybot'); // Initialize the Telegram bot
+        $telegram = Telegram::bot('Test'); // Initialize the Telegram bot
 
         // Extract chat ID and message ID from the message object
         $chatId = $message->getChat()->getId();

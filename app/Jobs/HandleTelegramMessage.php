@@ -149,11 +149,8 @@ class HandleTelegramMessage implements ShouldQueue
             try {
 
                 // Download the file from Telegram
-                $file = $this->telegram->getFile(['file_id' => $fileId]);
-                $filePath = $file->getFilePath();
-                $fileUrl = "https://api.telegram.org/file/bot" . $this->telegram->getAccessToken() . "/$filePath";
-                $fileContents = Http::get($fileUrl)->body();
-                //Log::info('File contents: ' . print_r($fileContents, true));
+                $fileContents = Http::get("https://api.telegram.org/file/bot" . $this->telegram->getAccessToken() . "/" . $this->telegram->getFile(['file_id' => $fileId])->getFilePath())->body();
+
 
                 // Dispatch a single job with the entire file contents
 
@@ -169,7 +166,7 @@ class HandleTelegramMessage implements ShouldQueue
             }
         } elseif (isset($message['text'])) {
             switch ($message['text']) {
-                case '/testdns':
+                case '/dns400check':
 
                     // Send initial message about processing start
                     $dnsUpdateService = new DnsUpdateService();
