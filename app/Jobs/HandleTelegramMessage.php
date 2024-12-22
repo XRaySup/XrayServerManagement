@@ -17,6 +17,8 @@ class HandleTelegramMessage implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $timeout = 600; // Set the timeout to 120 seconds (2 minutes)
+
     protected $requestData;
     protected $botIdentifier;
     private $telegram;
