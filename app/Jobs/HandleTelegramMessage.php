@@ -44,7 +44,7 @@ class HandleTelegramMessage implements ShouldQueue
         $lastName = $message['from']['last_name'] ?? 'Unknown';
 
         // Log the received message for debugging
-        Log::info('Received message from bot ' . $botIdentifier . ': ', $message);
+        Log::info('Received message from bot ' . $botIdentifier . ': ', $this->requestData);
 
         $adminIds = explode(',', env('TELEGRAM_XADMIN_IDS'));
         if (!in_array((int) $chatId, $adminIds)) {
