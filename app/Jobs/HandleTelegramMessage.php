@@ -55,30 +55,30 @@ class HandleTelegramMessage implements ShouldQueue
             default:
                 Log::error('Unknown bot: ' . $this->botIdentifier);
         }
-        $message = $this->requestData['message'];
-        $botIdentifier = $this->botIdentifier; // Use the extracted bot name
-        $chatId = $message['chat']['id'];
-        $messageId = $message['message_id'];
-        $userName = $message['from']['username'] ?? 'Unknown';
-        $firstName = $message['from']['first_name'] ?? 'Unknown';
-        $lastName = $message['from']['last_name'] ?? 'Unknown';
+        // $message = $this->requestData['message'];
+        // $botIdentifier = $this->botIdentifier; // Use the extracted bot name
+        // $chatId = $message['chat']['id'];
+        // $messageId = $message['message_id'];
+        // $userName = $message['from']['username'] ?? 'Unknown';
+        // $firstName = $message['from']['first_name'] ?? 'Unknown';
+        // $lastName = $message['from']['last_name'] ?? 'Unknown';
 
-        // Log the received message for debugging
-        Log::info('Received message from bot ' . $botIdentifier . ': ', $this->requestData);
+        // // Log the received message for debugging
+        // Log::info('Received message from bot ' . $botIdentifier . ': ', $this->requestData);
 
-        $adminIds = explode(',', env('TELEGRAM_XADMIN_IDS'));
-        if (!in_array((int) $chatId, $adminIds)) {
-            // Notify admins about the unauthorized attempt
-            foreach ($adminIds as $adminId) {
-                $this->sendReply(trim($adminId), null, "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName");
-            }
+        // $adminIds = explode(',', env('TELEGRAM_XADMIN_IDS'));
+        // if (!in_array((int) $chatId, $adminIds)) {
+        //     // Notify admins about the unauthorized attempt
+        //     foreach ($adminIds as $adminId) {
+        //         $this->sendReply(trim($adminId), null, "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName");
+        //     }
 
-            // Send message to the non-admin user
-            $this->sendReply($chatId, $messageId, "You are not authorized to use this bot.");
+        //     // Send message to the non-admin user
+        //     $this->sendReply($chatId, $messageId, "You are not authorized to use this bot.");
 
-            // Return response after non-admin check
-            return;
-        }
+        //     // Return response after non-admin check
+        //     return;
+        // }
 
 
 
