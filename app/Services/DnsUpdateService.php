@@ -93,7 +93,7 @@ class DnsUpdateService
             ]);
         }
 
-        $progressMessageText = $this->subdomainPattern . $this->DNSCheck();
+        $progressMessageText = $this->DNSCheck();
 
         foreach ($progressMessages as $progressMessage) {
 
@@ -118,6 +118,7 @@ class DnsUpdateService
     {
         $failLimit = 10;
         $validIps = 0;
+        $rayValidIps = 0;
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
@@ -212,6 +213,10 @@ class DnsUpdateService
             } else {
                 // Response is as expected, rename the DNS record back to normal
                 $validIps += 1;
+                if($this->processIp($ip)==True){
+                    $this->logAndInfo("IP $ip passed all checks.");
+                    $rayValidIps += 1;
+                }
                 if (strpos($name, 'deleted.') === 0) {
                     $name = str_replace('deleted.', '', $name);
                     $this->cloudflare->updateDnsRecord($id, $name, $ip);
@@ -257,7 +262,12 @@ class DnsUpdateService
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
-        return "\n$validIps valid IPs are available. Total records are $totalDNS.";
+                // Create a success message summarizing the counts if there are valid IPs
+                $summaryMessage = "$this->subdomainPattern Process complete! \n" .
+                "Total DNS checked: $totalDNS \n".
+                "IPs with expected 400 response: $validIps \n" .
+                "IPs with expected Xray response: $rayValidIps";
+        return $summaryMessage;
     }
     private function logAndInfo($message)
     {
@@ -419,7 +429,7 @@ class DnsUpdateService
             "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
             "IPs with expected 400 response: $CountExpectedResponse400 \n" .
             "IPs with expected Xray response: $CountExpectedResponse \n" .
-            "IPs already in DNS: $CountDNSExist \n" .
+            "IPs already in DNS $this->subdomainPattern: $CountDNSExist \n" .
             "New DNS records added: $countAdded";
 
         $this->updateTelegramMessageWithRetry($message, $summaryMessage);

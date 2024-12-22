@@ -43,22 +43,18 @@ class HandleTelegramMessage implements ShouldQueue
     {
         Log::info('HandleTelegramMessage job started.');
         switch ($this->botIdentifier) {
-            case 'Test':
+            case 'Servers':
                 $this->telegram = Telegram::bot($this->botIdentifier);
-                $this->handleProxyBotMessage();
+                $this->handleServersBotMessage();
                 break;
             case 'Proxy':
                 $this->telegram = Telegram::bot($this->botIdentifier);
                 $this->handleProxyBotMessage();
                 break;
-            case 'Servers':
+            case 'Test':
                 $this->telegram = Telegram::bot($this->botIdentifier);
-                $this->handleServersBotMessage();
+                $this->handleTestBotMessage();
                 break;
-            // case 'another_bot':
-            //     $this->telegram = Telegram::bot('AnotherBot');
-            //     $this->handleAnotherBotMessage();
-            //     break;
             default:
                 Log::error('Unknown bot: ' . $this->botIdentifier);
         }
@@ -129,10 +125,63 @@ class HandleTelegramMessage implements ShouldQueue
         }
         $message = $this->requestData['message'];
         //$message = $request->input('message');
-        $chatId = $message['chat']['id'];
-        $messageId = $message['message_id'];
+        // $chatId = $message['chat']['id'];
+        // $messageId = $message['message_id'];
+        // Continue if the user is an admin
+        if (isset($message['document'])) {
+            $fileId = $message['document']['file_id'];
 
+            // Send initial message about processing start
+            $initialReply = "Your file is being processed.";
+            $progressMessage = $this->sendReply($initialReply);
 
+            if (!$progressMessage) {
+                return response()->json(['status' => 'error', 'message' => 'Failed to send initial reply'], 500);
+            }
+
+            try {
+
+                // Download the file from Telegram
+                $fileContents = Http::get("https://api.telegram.org/file/bot" . $this->telegram->getAccessToken() . "/" . $this->telegram->getFile(['file_id' => $fileId])->getFilePath())->body();
+                // Dispatch a single job with the entire file contents
+                ProcessIpsJob::dispatch($fileContents, $progressMessage);
+                //$progressMessage = $this->sendReply($chatId, $messageId, 'test');
+
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                Log::error('Telegram API error: ' . $e->getMessage());
+                $this->sendReply("Error: {$e->getMessage()}");
+            } catch (\Exception $e) {
+                Log::error('General error: ' . $e->getMessage());
+                $this->sendReply("Error: {$e->getMessage()}");
+            }
+        } elseif (isset($message['text'])) {
+            switch ($message['text']) {
+                case '/dns400check':
+
+                    // Send initial message about processing start
+                    $dnsUpdateService = new DnsUpdateService();
+                    $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
+                    $progressMessage = $this->sendReply($initialReply);
+                    $progressMessageText = $dnsUpdateService->DNSCheck();
+                    $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+                    break;
+                default:
+                    $this->sendReply("Unknown command.");
+            }
+
+        } else {
+            $this->sendReply("Unknown command.");
+        }
+    }
+    private function handleTestBotMessage()
+    {
+        Log::info('Handling ProxyBot message.');
+        // Add your logic here
+        $this->sendReply('Hello from TestBot!');
+        if ($this->checkUser(env('TELEGRAM_PROXY_ADMIN_IDS')) == false) {
+            return;
+        }
+        $message = $this->requestData['message'];
 
         // Continue if the user is an admin
         if (isset($message['document'])) {
@@ -150,10 +199,7 @@ class HandleTelegramMessage implements ShouldQueue
 
                 // Download the file from Telegram
                 $fileContents = Http::get("https://api.telegram.org/file/bot" . $this->telegram->getAccessToken() . "/" . $this->telegram->getFile(['file_id' => $fileId])->getFilePath())->body();
-
-
                 // Dispatch a single job with the entire file contents
-
                 ProcessIpsJob::dispatch($fileContents, $progressMessage);
                 //$progressMessage = $this->sendReply($chatId, $messageId, 'test');
 
@@ -178,11 +224,12 @@ class HandleTelegramMessage implements ShouldQueue
                 default:
                     $this->sendReply("Unknown command.");
             }
-            
+
         } else {
             $this->sendReply("Unknown command.");
         }
     }
+
     private function checkUser(string $adminIds): bool
     {
         $message = $this->requestData['message'];
