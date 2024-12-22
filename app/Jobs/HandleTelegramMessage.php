@@ -132,13 +132,53 @@ class HandleTelegramMessage implements ShouldQueue
         if($this->checkUser(env('TELEGRAM_XADMIN_IDS'))){
             $this->sendReply('You are admin!');
         }
+        $message = $this->requestData['message'];
+        $reply = '';
+        if (isset($message['text'])) {
+            switch ($message['text']) {
+                case '/Yesterday':
+                    $servers = Server::all();
+                    // Prepare the table message in Markdown format
+                    $reply = "*Remark* | *Usage (GB)*\n--- | ---\n";
+                    $totalUsage = 0;
+                    foreach ($servers as $server) {
+                        if ($server->status == "ONLINE") {
+                            $yesterdayUsage = $server->yesterdayUsage;
+                            $reply .= "{$server->remark} | *{$yesterdayUsage}* \n";
+                            $totalUsage += $yesterdayUsage;
+                        }
+                    }
+                    $reply .= "Total | *{$totalUsage}* \n";
+                    break;
+                case '/today':
+                    $servers = Server::all();
+                    // Prepare the table message in Markdown format
+                    $reply = "*Remark* | *Usage (GB)*\n--- | ---\n";
+                    $totalUsage = 0;
+                    foreach ($servers as $server) {
+                        if ($server->status == "ONLINE") {
+                            $todayUsage = $server->todayUsage;
+                            $reply .= "{$server->remark} | *{$todayUsage}* \n";
+                            $totalUsage += $todayUsage;
+                        }
+                    }
+                    $reply .= "Total | *{$totalUsage}* \n";
+                    break;
+                default:
+                    $reply = "Received unknown command.";
+            }
+        } else {    
+            $reply = "No text message received.";
+        }
+
+        $this->sendReply($reply);
+
         
     }
     private function checkUser(string $adminIds): bool
     {
         $message = $this->requestData['message'];
         $chatId = $message['chat']['id'];
-        $messageId = $message['message_id'];
         $userName = $message['from']['username'] ?? 'Unknown';
         $firstName = $message['from']['first_name'] ?? 'Unknown';
         $lastName = $message['from']['last_name'] ?? 'Unknown';
