@@ -15,6 +15,7 @@ class HandleTelegramMessage implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $requestData;
+    protected $botIdentifier;
 
     /**
      * Create a new job instance.
@@ -24,6 +25,7 @@ class HandleTelegramMessage implements ShouldQueue
     public function __construct($requestData)
     {
         $this->requestData = $requestData;
+        $this->botIdentifier = request()->query('bot', 'unknown_bot'); // Extract bot name from query parameter
         Log::info('HandleTelegramMessage job created.');
     }
 
@@ -36,7 +38,7 @@ class HandleTelegramMessage implements ShouldQueue
     {
         Log::info('HandleTelegramMessage job started.');
         $message = $this->requestData['message'];
-        $botIdentifier = $this->requestData['bot'] ?? 'unknown_bot';
+        $botIdentifier = $this->botIdentifier; // Use the extracted bot name
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
         $userName = $message['from']['username'] ?? 'Unknown';
