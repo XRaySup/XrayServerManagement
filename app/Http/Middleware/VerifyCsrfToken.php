@@ -13,8 +13,6 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         // Exclude the Telegram webhook route from CSRF protection
-        '/isegarobot/webhook',
-        '/xraybot/webhook', // Add your webhook route here
-        '/telegram/webhook', // Add this line
+        '/telegram/webhook', 
     ];
 }

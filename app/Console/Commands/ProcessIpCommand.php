@@ -32,7 +32,7 @@ class ProcessIpCommand extends Command
          $dnsUpdateService = new DnsUpdateService(function ($message) {
              $this->info($message);
          });
-         $telegram = Telegram::bot('mybot');
+         $telegram = Telegram::bot('Proxy');
          $message = $telegram->sendMessage([
              'chat_id' => env('TELEGRAM_TEST_ADMIN_IDS'),
              'text' => 'job started',

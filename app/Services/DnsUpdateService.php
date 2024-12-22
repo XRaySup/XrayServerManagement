@@ -81,8 +81,8 @@ class DnsUpdateService
     {
 
 
-        $telegram = Telegram::bot('mybot');
-        $adminIds = explode(',', env('TELEGRAM_ADMIN_IDS'));
+        $telegram = Telegram::bot('Proxy');
+        $adminIds = explode(',', env('TELEGRAM_PROXY_ADMIN_IDS'));
         $progressMessages = [];
         $progressMessageText = "Checking $this->subdomainPattern :";
         foreach ($adminIds as $adminId) {
@@ -100,20 +100,20 @@ class DnsUpdateService
             $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
         }
     }
-    public function botDNSCheck($progressMessage)
-    {
+    // public function botDNSCheck($progressMessage)
+    // {
 
 
 
-        $progressMessageText = "Checking $this->subdomainPattern :";
-        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+    //     $progressMessageText = "Checking $this->subdomainPattern :";
+    //     $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
 
-        $progressMessageText = $this->subdomainPattern . $this->DNSCheck();
+    //     $progressMessageText = $this->subdomainPattern . $this->DNSCheck();
 
-        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+    //     $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
 
 
-    }
+    // }
     public function DNSCheck(): string
     {
         $failLimit = 10;
@@ -533,7 +533,7 @@ class DnsUpdateService
     }
     public function updateTelegramMessageWithRetry($message, $text, $maxRetries = 3)
     {
-        $telegram = Telegram::bot('mybot'); // Initialize the Telegram bot
+        $telegram = Telegram::bot('Proxy'); // Initialize the Telegram bot
 
         // Extract chat ID and message ID from the message object
         $chatId = $message->getChat()->getId();
