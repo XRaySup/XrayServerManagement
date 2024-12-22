@@ -50,10 +50,10 @@ class HandleTelegramMessage implements ShouldQueue
                 $this->telegram = Telegram::bot($this->botIdentifier);
                 $this->handleServersBotMessage();
                 break;
-            case 'FreeXrayBot':
-                $this->telegram = Telegram::bot($this->botIdentifier);
-                $this->handleServersBotMessage();
-                break;
+            // case 'FreeXrayBot':
+            //     $this->telegram = Telegram::bot($this->botIdentifier);
+            //     $this->handleServersBotMessage();
+            //     break;
             // case 'another_bot':
             //     $this->telegram = Telegram::bot('AnotherBot');
             //     $this->handleAnotherBotMessage();
@@ -70,7 +70,7 @@ class HandleTelegramMessage implements ShouldQueue
         Log::info('Handling ServersBot message.');
         // Add your logic here
         //$this->sendReply('Hello from FreeXrayBot!');
-        if ($this->checkUser(env('TELEGRAM_XADMIN_IDS'))==false) {
+        if ($this->checkUser(env('TELEGRAM_SERVERS_ADMIN_IDS'))==false) {
             return;
         }
         $message = $this->requestData['message'];
