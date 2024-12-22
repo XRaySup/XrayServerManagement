@@ -31,15 +31,6 @@ return [
     |             ]
     */
     'bots' => [
-
-        // 'mybot' => [
-        //     'token' => env('TELEGRAM_BOT_TOKEN', 'YOUR-BOT-TOKEN'),
-        //     'certificate_path' => env('TELEGRAM_CERTIFICATE_PATH', 'YOUR-CERTIFICATE-PATH'),
-        //     'webhook_url' => env('TELEGRAM_WEBHOOK_URL', 'YOUR-BOT-WEBHOOK-URL'),
-        //     'allowed_updates' => null,
-        //     'commands' => [
-        //     ],
-        // ],
         'Test' => [
             'token' => env('TEST_BOT_TOKEN', 'YOUR-BOT-TOKEN'),
             'certificate_path' => env('TELEGRAM_CERTIFICATE_PATH', 'YOUR-CERTIFICATE-PATH'),
@@ -48,14 +39,6 @@ return [
             'commands' => [
             ],
         ],
-        // 'FreeXrayBot' => [
-        //     'token' => env('FREE_XRAY_BOT_TOKEN', 'YOUR-FREEXRAY-BOT-TOKEN'),
-        //     'certificate_path' => env('FREE_XRAY_CERTIFICATE_PATH', 'YOUR-FREEXRAY-CERTIFICATE-PATH'),
-        //     'webhook_url' => env('FREE_XRAY_WEBHOOK_URL', 'YOUR-FREEXRAY-BOT-WEBHOOK-URL'),
-        //     'allowed_updates' => null,
-        //     'commands' => [
-        //     ],
-        // ],
         'Servers' => [
             'token' => env('SERVERS_BOT_TOKEN', 'YOUR-SERVERS-BOT-TOKEN'),
             'certificate_path' => env('SERVERS_XRAY_CERTIFICATE_PATH', 'YOUR-SERVERS-CERTIFICATE-PATH'),
