@@ -24,6 +24,7 @@ class HandleTelegramMessage implements ShouldQueue
     public function __construct($requestData)
     {
         $this->requestData = $requestData;
+        log::info('HandleTelegramMessage started.');
     }
 
     /**
@@ -33,6 +34,7 @@ class HandleTelegramMessage implements ShouldQueue
      */
     public function handle()
     {
+        log::info('HandleTelegramMessage started.');
         $message = $this->requestData['message'];
         $botIdentifier = $this->requestData['bot'] ?? 'unknown_bot';
         $chatId = $message['chat']['id'];
