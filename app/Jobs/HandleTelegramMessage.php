@@ -147,7 +147,7 @@ class HandleTelegramMessage implements ShouldQueue
             }
 
             try {
-                
+
                 // Download the file from Telegram
                 $file = $this->telegram->getFile(['file_id' => $fileId]);
                 $filePath = $file->getFilePath();
@@ -165,36 +165,25 @@ class HandleTelegramMessage implements ShouldQueue
                 $this->sendReply("Error: {$e->getMessage()}");
             } catch (\Exception $e) {
                 Log::error('General error: ' . $e->getMessage());
-                $this->sendReply( "Error: {$e->getMessage()}");
+                $this->sendReply("Error: {$e->getMessage()}");
+            }
+        } elseif (isset($message['text'])) {
+            switch ($message['text']) {
+                case '/testdns':
+
+                    // Send initial message about processing start
+                    $dnsUpdateService = new DnsUpdateService();
+                    $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
+                    $progressMessage = $this->sendReply($initialReply);
+                    $progressMessageText = $dnsUpdateService->subdomainPattern . $dnsUpdateService->DNSCheck();
+                    $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+                    break;
+                default:
+                    $this->sendReply("Unknown command.");
             }
         } else {
-            if (isset($message['text'])) {
-                switch ($message['text']) {
-                    case '/testdns':
-
-                        // Send initial message about processing start
-                        $initialReply = "Running the command.";
-                        $progressMessage = $this->sendReply($initialReply);
-                        // Dispatch the BotDNSCheckJob
-                        //BotDNSCheckJob::dispatch($progressMessage);
-                        $dnsUpdateService = new DnsUpdateService();
-                        $progressMessageText = "Checking $dnsUpdateService->subdomainPattern :";
-                        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-                
-
-                        $progressMessageText = $dnsUpdateService->subdomainPattern . $dnsUpdateService->DNSCheck();
-                
-                        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-                        break;
-                    default:
-                        $this->sendReply("No file received.");
-                }
-            } else {
-                $this->sendReply( "No text message received.");
-            }
+            $this->sendReply("Unknown command.");
         }
-
-        return response()->json(['status' => 'ok']);
     }
     private function checkUser(string $adminIds): bool
     {
