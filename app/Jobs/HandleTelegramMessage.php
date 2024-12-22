@@ -42,12 +42,17 @@ class HandleTelegramMessage implements ShouldQueue
         Log::info('HandleTelegramMessage job started.');
         switch ($this->botIdentifier) {
             case 'Test':
-                log::info('Test');
+                //log::info('Test');
                 $this->telegram = Telegram::bot($this->botIdentifier);
-                $this->handleFreeXrayBotMessage();
-            case 'free_xray_bot':
-                $this->telegram = Telegram::bot('FreeXrayBot');
-                $this->handleFreeXrayBotMessage();
+                $this->handleServersBotMessage();
+                break;
+            case 'Servers':
+                $this->telegram = Telegram::bot($this->botIdentifier);
+                $this->handleServersBotMessage();
+                break;
+            case 'FreeXrayBot':
+                $this->telegram = Telegram::bot($this->botIdentifier);
+                $this->handleServersBotMessage();
                 break;
             // case 'another_bot':
             //     $this->telegram = Telegram::bot('AnotherBot');
@@ -59,14 +64,14 @@ class HandleTelegramMessage implements ShouldQueue
         Log::info('HandleTelegramMessage job completed.');
     }
 
-    private function handleFreeXrayBotMessage()
+    private function handleServersBotMessage()
     {
         // Implement the handleFreeXrayBotMessage method
-        Log::info('Handling FreeXrayBot message.');
+        Log::info('Handling ServersBot message.');
         // Add your logic here
         //$this->sendReply('Hello from FreeXrayBot!');
-        if($this->checkUser(env('TELEGRAM_XADMIN_IDS'))){
-            //$this->sendReply('You are admin!');
+        if ($this->checkUser(env('TELEGRAM_XADMIN_IDS'))==false) {
+            return;
         }
         $message = $this->requestData['message'];
         $reply = '';
@@ -105,13 +110,13 @@ class HandleTelegramMessage implements ShouldQueue
                 default:
                     $reply = "Received unknown command.";
             }
-        } else {    
+        } else {
             $reply = "No text message received.";
         }
 
         $this->sendReply($reply);
 
-        
+
     }
     private function checkUser(string $adminIds): bool
     {

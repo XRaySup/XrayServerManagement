@@ -56,6 +56,22 @@ return [
             'commands' => [
             ],
         ],
+        'Servers' => [
+            'token' => env('SERVERS_BOT_TOKEN', 'YOUR-SERVERS-BOT-TOKEN'),
+            'certificate_path' => env('SERVERS_XRAY_CERTIFICATE_PATH', 'YOUR-SERVERS-CERTIFICATE-PATH'),
+            'webhook_url' => env('SERVERS_WEBHOOK_URL', 'YOUR-SERVERS-BOT-WEBHOOK-URL'),
+            'allowed_updates' => null,
+            'commands' => [
+            ],
+        ],
+        'Proxy' => [
+            'token' => env('PROXY_BOT_TOKEN', 'YOUR-BOT-TOKEN'),
+            'certificate_path' => env('TELEGRAM_CERTIFICATE_PATH', 'YOUR-CERTIFICATE-PATH'),
+            'webhook_url' => env('TELEGRAM_WEBHOOK_URL', 'YOUR-BOT-WEBHOOK-URL'),
+            'allowed_updates' => null,
+            'commands' => [
+            ],
+        ],
 
     ],
 
