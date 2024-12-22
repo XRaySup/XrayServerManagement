@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Server;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use Illuminate\Support\Facades\Http;
+use App\Services\DnsUpdateService;
 
 class HandleTelegramMessage implements ShouldQueue
 {
@@ -170,11 +171,20 @@ class HandleTelegramMessage implements ShouldQueue
             if (isset($message['text'])) {
                 switch ($message['text']) {
                     case '/testdns':
+
                         // Send initial message about processing start
                         $initialReply = "Running the command.";
                         $progressMessage = $this->sendReply($initialReply);
                         // Dispatch the BotDNSCheckJob
-                        BotDNSCheckJob::dispatch($progressMessage);
+                        //BotDNSCheckJob::dispatch($progressMessage);
+                        $dnsUpdateService = new DnsUpdateService();
+                        $progressMessageText = "Checking $dnsUpdateService->subdomainPattern :";
+                        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+                
+
+                        $progressMessageText = $dnsUpdateService->subdomainPattern . $dnsUpdateService->DNSCheck();
+                
+                        $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
                         break;
                     default:
                         $this->sendReply("No file received.");
@@ -230,5 +240,44 @@ class HandleTelegramMessage implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('Telegram API error: ' . $e->getMessage());
         }
+    }
+    public function updateTelegramMessageWithRetry($message, $text, $maxRetries = 3)
+    {
+        $telegram = Telegram::bot('mybot'); // Initialize the Telegram bot
+
+        // Extract chat ID and message ID from the message object
+        $chatId = $message->getChat()->getId();
+        $messageId = $message->getMessageId();
+
+        $retryCount = 0;
+        $success = false;
+
+        while (!$success && $retryCount < $maxRetries) {
+            try {
+                // Update the message using the Telegram API
+                $telegram->editMessageText([
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                    'text' => $text,
+                ]);
+                $success = true; // Exit the loop if successful
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                $retryCount++;
+                $this->logAndError("Telegram API error while updating message (attempt $retryCount): " . $e->getMessage());
+
+                // Retry if it's a rate limit error or a recoverable error
+                if ($e->getCode() == 429 || $retryCount < $maxRetries) {
+                    sleep(1); // Wait before retrying
+                } else {
+                    break; // Exit loop if it's an unrecoverable error
+                }
+            }
+        }
+
+        if (!$success) {
+            $this->logAndError("Failed to update message on Telegram after {$maxRetries} attempts.");
+        }
+
+        return $success;
     }
 }

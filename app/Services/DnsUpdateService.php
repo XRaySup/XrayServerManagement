@@ -16,7 +16,7 @@ use App\Services\CloudflareApiService;
 class DnsUpdateService
 {
     protected $logFile;
-    protected $subdomainPattern;
+    public $subdomainPattern;
     protected $cloudflare;
     protected $ipLogData;
     protected $ipLog;
