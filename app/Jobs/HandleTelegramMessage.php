@@ -28,7 +28,7 @@ class HandleTelegramMessage implements ShouldQueue
     {
         $this->requestData = $requestData;
         $this->botIdentifier = request()->query('bot', 'unknown_bot'); // Extract bot name from query parameter
-        
+
         Log::info('HandleTelegramMessage job created.');
     }
 
@@ -55,30 +55,32 @@ class HandleTelegramMessage implements ShouldQueue
             default:
                 Log::error('Unknown bot: ' . $this->botIdentifier);
         }
-        // $message = $this->requestData['message'];
-        // $botIdentifier = $this->botIdentifier; // Use the extracted bot name
-        // $chatId = $message['chat']['id'];
-        // $messageId = $message['message_id'];
-        // $userName = $message['from']['username'] ?? 'Unknown';
-        // $firstName = $message['from']['first_name'] ?? 'Unknown';
-        // $lastName = $message['from']['last_name'] ?? 'Unknown';
+        $message = $this->requestData['message'];
+        $botIdentifier = $this->botIdentifier; // Use the extracted bot name
+        $chatId = $message['chat']['id'];
+        $messageId = $message['message_id'];
+        $userName = $message['from']['username'] ?? 'Unknown';
+        $firstName = $message['from']['first_name'] ?? 'Unknown';
+        $lastName = $message['from']['last_name'] ?? 'Unknown';
 
-        // // Log the received message for debugging
-        // Log::info('Received message from bot ' . $botIdentifier . ': ', $this->requestData);
+        // Log the received message for debugging
+        Log::info('Received message from bot ' . $botIdentifier . ': ', $this->requestData);
 
-        // $adminIds = explode(',', env('TELEGRAM_XADMIN_IDS'));
-        // if (!in_array((int) $chatId, $adminIds)) {
-        //     // Notify admins about the unauthorized attempt
-        //     foreach ($adminIds as $adminId) {
-        //         $this->sendReply(trim($adminId), null, "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName");
-        //     }
+        $adminIds = explode(',', env('TELEGRAM_XADMIN_IDS'));
+        if (!in_array((int) $chatId, $adminIds)) {
+            // Notify admins about the unauthorized attempt
+            foreach ($adminIds as $adminId) {
+                $this->sendReply(trim($adminId), null, "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName");
+            }
 
-        //     // Send message to the non-admin user
-        //     $this->sendReply($chatId, $messageId, "You are not authorized to use this bot.");
+            // Send message to the non-admin user
+            $this->sendReply($chatId, $messageId, "You are not authorized to use this bot.");
 
-        //     // Return response after non-admin check
-        //     return;
-        // }
+            // Return response after non-admin check
+            return;
+        }
+
+
 
         // if (isset($message['text'])) {
         //     if ($message['text'] === '/usage') {
@@ -127,9 +129,40 @@ class HandleTelegramMessage implements ShouldQueue
         Log::info('Handling FreeXrayBot message.');
         // Add your logic here
         $this->sendReply('Hello from FreeXrayBot!');
+        if($this->checkUser(env('TELEGRAM_XADMIN_IDS'))){
+            $this->sendReply('You are admin!');
+        }
+        
+    }
+    private function checkUser(string $adminIds): bool
+    {
+        $message = $this->requestData['message'];
+        $chatId = $message['chat']['id'];
+        $messageId = $message['message_id'];
+        $userName = $message['from']['username'] ?? 'Unknown';
+        $firstName = $message['from']['first_name'] ?? 'Unknown';
+        $lastName = $message['from']['last_name'] ?? 'Unknown';
+        $adminIds = explode(',', $adminIds);
+        if (!in_array((int) $chatId, $adminIds)) {
+            // Notify admins about the unauthorized attempt
+            $text = "Non-admin user tried to interact: \nID: $chatId\nUsername: $userName\nName: $firstName $lastName";
+            foreach ($adminIds as $adminId) {
+                $this->telegram->sendMessage([
+                    'chat_id' => $adminId,
+                    'text' => $text,
+                ]);
+
+                // Send message to the non-admin user
+
+            }
+            $this->sendReply("You are not authorized to use this bot.");
+            return false;
+        } else {
+            return True;
+        }
     }
 
-    private function sendReply($text)
+    private function sendReply(string $text)
     {
         $message = $this->requestData['message'];
         $chatId = $message['chat']['id'];
