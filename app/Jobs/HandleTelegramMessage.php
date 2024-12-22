@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use App\Models\Server;
 use Telegram\Bot\Laravel\Facades\Telegram;
+use Illuminate\Support\Facades\Http;
 
 class HandleTelegramMessage implements ShouldQueue
 {
@@ -42,18 +43,17 @@ class HandleTelegramMessage implements ShouldQueue
         Log::info('HandleTelegramMessage job started.');
         switch ($this->botIdentifier) {
             case 'Test':
-                //log::info('Test');
                 $this->telegram = Telegram::bot($this->botIdentifier);
-                $this->handleServersBotMessage();
+                $this->handleProxyBotMessage();
+                break;
+            case 'Proxy':
+                $this->telegram = Telegram::bot($this->botIdentifier);
+                $this->handleProxyBotMessage();
                 break;
             case 'Servers':
                 $this->telegram = Telegram::bot($this->botIdentifier);
                 $this->handleServersBotMessage();
                 break;
-            // case 'FreeXrayBot':
-            //     $this->telegram = Telegram::bot($this->botIdentifier);
-            //     $this->handleServersBotMessage();
-            //     break;
             // case 'another_bot':
             //     $this->telegram = Telegram::bot('AnotherBot');
             //     $this->handleAnotherBotMessage();
@@ -68,9 +68,8 @@ class HandleTelegramMessage implements ShouldQueue
     {
         // Implement the handleFreeXrayBotMessage method
         Log::info('Handling ServersBot message.');
-        // Add your logic here
-        //$this->sendReply('Hello from FreeXrayBot!');
-        if ($this->checkUser(env('TELEGRAM_SERVERS_ADMIN_IDS'))==false) {
+
+        if ($this->checkUser(env('TELEGRAM_SERVERS_ADMIN_IDS')) == false) {
             return;
         }
         $message = $this->requestData['message'];
@@ -117,6 +116,75 @@ class HandleTelegramMessage implements ShouldQueue
         $this->sendReply($reply);
 
 
+    }
+
+    private function handleProxyBotMessage()
+    {
+        Log::info('Handling ProxyBot message.');
+        // Add your logic here
+        //$this->sendReply('Hello from FreeXrayBot!');
+        if ($this->checkUser(env('TELEGRAM_PROXY_ADMIN_IDS')) == false) {
+            return;
+        }
+        $message = $this->requestData['message'];
+        //$message = $request->input('message');
+        $chatId = $message['chat']['id'];
+        $messageId = $message['message_id'];
+
+
+
+        // Continue if the user is an admin
+        if (isset($message['document'])) {
+            $fileId = $message['document']['file_id'];
+
+            // Send initial message about processing start
+            $initialReply = "Your file is being processed.";
+            $progressMessage = $this->sendReply($initialReply);
+
+            if (!$progressMessage) {
+                return response()->json(['status' => 'error', 'message' => 'Failed to send initial reply'], 500);
+            }
+
+            try {
+                
+                // Download the file from Telegram
+                $file = $this->telegram->getFile(['file_id' => $fileId]);
+                $filePath = $file->getFilePath();
+                $fileUrl = "https://api.telegram.org/file/bot" . $this->telegram->getAccessToken() . "/$filePath";
+                $fileContents = Http::get($fileUrl)->body();
+                //Log::info('File contents: ' . print_r($fileContents, true));
+
+                // Dispatch a single job with the entire file contents
+
+                ProcessIpsJob::dispatch($fileContents, $progressMessage);
+                //$progressMessage = $this->sendReply($chatId, $messageId, 'test');
+
+            } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
+                Log::error('Telegram API error: ' . $e->getMessage());
+                $this->sendReply("Error: {$e->getMessage()}");
+            } catch (\Exception $e) {
+                Log::error('General error: ' . $e->getMessage());
+                $this->sendReply( "Error: {$e->getMessage()}");
+            }
+        } else {
+            if (isset($message['text'])) {
+                switch ($message['text']) {
+                    case '/testdns':
+                        // Send initial message about processing start
+                        $initialReply = "Running the command.";
+                        $progressMessage = $this->sendReply($initialReply);
+                        // Dispatch the BotDNSCheckJob
+                        BotDNSCheckJob::dispatch($progressMessage);
+                        break;
+                    default:
+                        $this->sendReply("No file received.");
+                }
+            } else {
+                $this->sendReply( "No text message received.");
+            }
+        }
+
+        return response()->json(['status' => 'ok']);
     }
     private function checkUser(string $adminIds): bool
     {
