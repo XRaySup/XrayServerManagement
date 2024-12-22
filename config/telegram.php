@@ -40,6 +40,14 @@ return [
             'commands' => [
             ],
         ],
+        'Test' => [
+            'token' => env('TEST_BOT_TOKEN', 'YOUR-BOT-TOKEN'),
+            'certificate_path' => env('TELEGRAM_CERTIFICATE_PATH', 'YOUR-CERTIFICATE-PATH'),
+            'webhook_url' => env('TELEGRAM_WEBHOOK_URL', 'YOUR-BOT-WEBHOOK-URL'),
+            'allowed_updates' => null,
+            'commands' => [
+            ],
+        ],
         'FreeXrayBot' => [
             'token' => env('FREE_XRAY_BOT_TOKEN', 'YOUR-FREEXRAY-BOT-TOKEN'),
             'certificate_path' => env('FREE_XRAY_CERTIFICATE_PATH', 'YOUR-FREEXRAY-CERTIFICATE-PATH'),

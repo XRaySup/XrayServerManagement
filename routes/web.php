@@ -3,9 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\isegarobotController;
 use App\Http\Controllers\xraybot;
+use App\Http\Controllers\TelegramWebhookController;
 
 Route::post('/isegarobot/webhook', [isegarobotController::class, 'handleWebhook']);
 Route::post('/xraybot/webhook', [xraybot::class, 'handleWebhook']);
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
 
 /*
 |--------------------------------------------------------------------------
