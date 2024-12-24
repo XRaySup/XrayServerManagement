@@ -39,12 +39,12 @@ class ProcessIpCommand extends Command
              'chat_id' => env('TELEGRAM_TEST_ADMIN_IDS'),
              'text' => 'job started',
          ]);
-
+         $dnsUpdateService->messages= [$message];
         //$dnsUpdateService->processIp($ipAddress);
-        $filecontent = file_get_contents(base_path('Xray/bin/ips.csv'));
-        $dnsUpdateService->processFileContent($filecontent, $message);
-
-        //dump($dnsUpdateService->DNSCheck());
+        //$filecontent = file_get_contents(base_path('Xray/bin/ips.csv'));
+        //$dnsUpdateService->processFileContent($filecontent, $message);
+        $dnsUpdateService->DNSCheck();
+        dump($dnsUpdateService->DNSCheck());
         return 0;
     }
 }

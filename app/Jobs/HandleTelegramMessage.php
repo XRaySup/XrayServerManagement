@@ -17,7 +17,7 @@ class HandleTelegramMessage implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 600; // Set the timeout to 120 seconds (2 minutes)
+    public $timeout = 1200; // Set the timeout to 120 seconds (2 minutes)
 
     protected $requestData;
     protected $botIdentifier;
@@ -164,8 +164,9 @@ class HandleTelegramMessage implements ShouldQueue
                     $dnsUpdateService = new DnsUpdateService();
                     $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
                     $progressMessage = $this->sendReply($initialReply);
+                    $dnsUpdateService->messages = [$progressMessage];
                     $progressMessageText = $dnsUpdateService->DNSCheck();
-                    $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+                    //$this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
                     break;
                 default:
                     $this->sendReply("Unknown command.");

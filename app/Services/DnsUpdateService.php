@@ -18,6 +18,7 @@ class DnsUpdateService
 {
     protected $logFile;
     public $subdomainPattern;
+    public $messages;
     protected $cloudflare;
     protected $ipLogData;
     protected $ipLog;
@@ -93,7 +94,7 @@ class DnsUpdateService
                 'text' => $progressMessageText,
             ]);
         }
-
+        $this->messages = $progressMessages;
         $progressMessageText = $this->DNSCheck();
 
         foreach ($progressMessages as $progressMessage) {
@@ -137,13 +138,63 @@ class DnsUpdateService
             return "Failed to get DNS records. Exiting.";
         }
         // Extract IPs from DNS records in one line
-        $ipsToCheck = array_column($dnsRecords, 'content');
+        $ipsToCheck = array_column(array_filter($dnsRecords, function ($record) {
+            return strpos($record['name'], $this->subdomainPattern) !== false;
+        }), 'content');
+        $totalDNS = count($ipsToCheck);
 
-        // Now check the responses for all collected IPs
-        //$Results400 = $this->check400Responses($ipsToCheck); // Check all IPs at once
-        $IPResponses = $this->checkIpResponses($ipsToCheck); // Check all IPs at once
+        // Initialize counters and start time
+        $validIps = 0;
+        $XrayValidIps = 0;
+        $startTime = time();
+        $chunkSize = 5;
+        $ipChunks = array_chunk($ipsToCheck, $chunkSize);
+        $lastUpdateTime = time();
+        $checkedIps = 0;
+        foreach ($ipChunks as $chunk) {
+            $IPResponses = $this->checkIpResponses($chunk); // Check IPs in chunks
 
+            $validIps += count(array_filter($IPResponses, function ($response) {
+                return $response['400 Response'] === true;
+            }));
+            $XrayValidIps += count(array_filter($IPResponses, function ($response) {
+                return $response['Result'] === true;
+            }));
 
+            // Calculate progress and elapsed time
+            $checkedIps += count($chunk);
+            $progress = round(($checkedIps / $totalDNS) * 100, 2);
+            $elapsedTime = gmdate("H:i:s", time() - $startTime);
+            $summaryMessage = "$this->subdomainPattern :\n" .
+                "Process Running! $progress % \n" .
+                "Total DNS checked:  $checkedIps / $totalDNS \n" .
+                "IPs with expected 400 response: $validIps \n" .
+                "IPs with expected Xray response: $XrayValidIps \n" .
+                "Time elapsed: $elapsedTime";
+
+            // Update the user every 10 seconds
+            $currentTime = time();
+            if ($currentTime - $lastUpdateTime >= 10 && $this->messages) {
+                foreach ($this->messages as $message) {
+                    $this->updateTelegramMessageWithRetry($message, $summaryMessage);
+                }
+                //$this->updateTelegramMessageWithRetry($this->message, $summaryMessage);
+                $lastUpdateTime = $currentTime;
+            }
+        }
+        $elapsedTime = gmdate("H:i:s", time() - $startTime);
+        // Create a success message summarizing the counts if there are valid IPs
+        $summaryMessage = "$this->subdomainPattern :\n" .
+            "Process complete! \n" .
+            "Total DNS checked: $totalDNS \n" .
+            "IPs with expected 400 response: $validIps \n" .
+            "IPs with expected Xray response: $XrayValidIps" .
+            "Time elapsed: $elapsedTime";
+        if ($this->messages) {
+            foreach ($this->messages as $message) {
+                $this->updateTelegramMessageWithRetry($message, $summaryMessage);
+            }
+        }
         foreach ($dnsRecords as $record) {
 
             $type = $record['type'];
@@ -247,16 +298,16 @@ class DnsUpdateService
         fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', '400 Response', 'Google Response', '204 Response', 'Download Time', 'Unexpected Response Count']);
         foreach ($this->ipLogData as $data) {
             fputcsv($csvHandle, [
-            $data['Type'],
-            $data['Name'],
-            $data['Content'],
-            $data['Proxied'] ? 'True' : 'False',
-            $data['Action'],
-            $data['400 Response'] ? 'True' : 'False',
-            $data['Google Response'],
-            $data['204 Response'],
-            $data['Download Time'],
-            $data['Unexpected Response Count']
+                $data['Type'],
+                $data['Name'],
+                $data['Content'],
+                $data['Proxied'] ? 'True' : 'False',
+                $data['Action'],
+                $data['400 Response'] ? 'True' : 'False',
+                $data['Google Response'],
+                $data['204 Response'],
+                $data['Download Time'],
+                $data['Unexpected Response Count']
             ]);
         }
 
@@ -365,68 +416,68 @@ class DnsUpdateService
         $totaIpsToCheck = count($ipsToCheck);
         // Check the IP responses
         //$ipResults = $this->check400Responses($ipsToCheck);
-        $ipResults = $this->checkIpResponses($ipsToCheck);
-        //dump($ipResults);
+        $chunkSize = 5;
+        $ipChunks = array_chunk($ipsToCheck, $chunkSize);
         $lastUpdateTime = time();
-        foreach ($ipsToCheck as $ip) {
-            $countIps++;
-            $ipResult = $ipResults[$ip];
-            // Validate the IP address
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                $ExpectedResponse = false;
-                //$ExpectedResponse400 = $ipResults[$ip] ?? false; // Get the response from the array
-                // Process each IP
 
-                if ($ipResult['400 Response']) {
-                    $CountExpectedResponse400 += 1;
-                    //$ExpectedResponse = $this->processIp($ip);
-                    //$this->logAndOutput("IP $ExpectedResponse passed all checks.");
-                    if ($ipResult['Result']) {
-                        //$this->logAndOutput("IP $ip passed all checks.");
-                        $CountExpectedResponse++;
+        foreach ($ipChunks as $chunk) {
+            $ipResults = $this->checkIpResponses($chunk);
 
-                        // Check if the IP exists in the DNS records
-                        $ExistInDNS = false;
-                        foreach ($dnsRecords as $record) {
-                            if ($record['content'] === $ip) {
-                                $ExistInDNS = true;
+            foreach ($chunk as $ip) {
+                $countIps++;
+                $ipResult = $ipResults[$ip];
 
-                                break;
+                // Validate the IP address
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    $ExpectedResponse = false;
+
+                    if ($ipResult['400 Response']) {
+                        $CountExpectedResponse400 += 1;
+
+                        if ($ipResult['Result']) {
+                            $CountExpectedResponse++;
+
+                            // Check if the IP exists in the DNS records
+                            $ExistInDNS = false;
+                            foreach ($dnsRecords as $record) {
+                                if ($record['content'] === $ip) {
+                                    $ExistInDNS = true;
+                                    break;
+                                }
+                            }
+
+                            if ($ExistInDNS) {
+                                $CountDNSExist++;
+                                continue;
+                            } else {
+                                $this->logAndOutput("IP $ip does not exist in DNS");
                             }
                         }
+                    }
 
-                        if ($ExistInDNS) {
-                            $CountDNSExist++;
-                            //$this->logAndOutput("IP $ip already exists in DNS");
-                            continue;
-                        } else {
-                            $this->logAndOutput("IP $ip does not exist in DNS");
-                        }
+                    // Add DNS record if the expected response is true and IP doesn't exist in DNS
+                    if ($ExpectedResponse && !$ExistInDNS) {
+                        $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
+                        $this->logAndOutput("add to dns.");
+                        $countAdded++;
                     }
                 }
 
+                $progress = round(($countIps / $totaIpsToCheck) * 100, 2);
+                $elapsedTime = gmdate("H:i:s", time() - $lastUpdateTime);
+                $summaryMessage = "Process Running! $progress % \n" .
+                    "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
+                    "IPs with expected 400 response: $CountExpectedResponse400 \n" .
+                    "IPs with expected Xray response: $CountExpectedResponse \n" .
+                    "IPs already in DNS $this->subdomainPattern: $CountDNSExist \n" .
+                    "New DNS records added: $countAdded \n" .
+                    "Time elapsed: $elapsedTime";
 
-                // Add DNS record if the expected response is true and IP doesn't exist in DNS
-                if ($ExpectedResponse && !$ExistInDNS) {
-                    $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
-                    $this->logAndOutput("add to dns.");
-                    $countAdded++;
+                $currentTime = time();
+                if ($currentTime - $lastUpdateTime >= 2) {
+                    $this->updateTelegramMessageWithRetry($message, $summaryMessage);
+                    $lastUpdateTime = $currentTime;
                 }
-            }
-            $progress = round(($countIps / $totaIpsToCheck) * 100, 2);
-            $summaryMessage = "Process Running! $progress % \n" .
-                "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
-                "IPs with expected 400 response: $CountExpectedResponse400 \n" .
-                "IPs with expected Xray response: $CountExpectedResponse \n" .
-                "IPs already in DNS $this->subdomainPattern: $CountDNSExist \n" .
-                "New DNS records added: $countAdded";
-            //$this->updateTelegramMessageWithRetry($message, $summaryMessage);
-            // Send progress update to Telegram every 2 seconds
-            //static $lastUpdateTime = 0;
-            $currentTime = time();
-            if ($currentTime - $lastUpdateTime >= 2) {
-                $this->updateTelegramMessageWithRetry($message, $summaryMessage);
-                $lastUpdateTime = $currentTime;
             }
         }
 
@@ -436,12 +487,14 @@ class DnsUpdateService
         }
 
         // Create a success message summarizing the counts if there are valid IPs
+        $elapsedTime = gmdate("H:i:s", time() - $lastUpdateTime);
         $summaryMessage = "Process complete! \n" .
             "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
             "IPs with expected 400 response: $CountExpectedResponse400 \n" .
             "IPs with expected Xray response: $CountExpectedResponse \n" .
             "IPs already in DNS $this->subdomainPattern: $CountDNSExist \n" .
-            "New DNS records added: $countAdded";
+            "New DNS records added: $countAdded \n" .
+            "Total time elapsed: $elapsedTime";
 
         $this->updateTelegramMessageWithRetry($message, $summaryMessage);
 
@@ -479,7 +532,7 @@ class DnsUpdateService
                 $ipXrayReport = $this->processIp($ip);
                 $result = array_merge($result, $ipXrayReport);
             }
-  
+
             $responses[$ip] = $result;
             $this->logAndOutput('IP: ' . $ip . ' 400 Response: ' . ($result['400 Response'] ? 'True' : 'False') . ' Google Response: ' . $result['Google Response'] . ' 204 Response: ' . $result['204 Response'] . ' Download Time: ' . $result['Download Time'] . ' File Size: ' . $result['File Size']);
         }
@@ -533,7 +586,7 @@ class DnsUpdateService
                     //$this->logAndInfo("Cloudflare server detected with 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = true;
                 } else {
-                   // $this->logAndInfo("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
+                    // $this->logAndInfo("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = false;
                 }
             }
