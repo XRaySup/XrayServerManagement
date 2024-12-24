@@ -151,18 +151,20 @@ class DnsUpdateService
         $ipChunks = array_chunk($ipsToCheck, $chunkSize);
         $lastUpdateTime = time();
         $checkedIps = 0;
+        $IPResponses = [];
         foreach ($ipChunks as $chunk) {
-            $IPResponses = $this->checkIpResponses($chunk); // Check IPs in chunks
+            $chunkResponses = $this->checkIpResponses($chunk); // Check IPs in chunks
+            $IPResponses = array_merge($IPResponses, $chunkResponses); // Merge chunk responses with previous responses
 
-            $validIps += count(array_filter($IPResponses, function ($response) {
+            $validIps = count(array_filter($IPResponses, function ($response) {
                 return $response['400 Response'] === true;
             }));
-            $XrayValidIps += count(array_filter($IPResponses, function ($response) {
+            $XrayValidIps = count(array_filter($IPResponses, function ($response) {
                 return $response['Result'] === true;
             }));
 
             // Calculate progress and elapsed time
-            $checkedIps += count($chunk);
+            $checkedIps = count($IPResponses);
             $progress = round(($checkedIps / $totalDNS) * 100, 2);
             $elapsedTime = gmdate("H:i:s", time() - $startTime);
             $summaryMessage = "$this->subdomainPattern :\n" .
