@@ -41,9 +41,9 @@ class ProcessIpCommand extends Command
          ]);
          $dnsUpdateService->messages= [$message];
         //$dnsUpdateService->processIp($ipAddress);
-        $filecontent = file_get_contents(base_path('Xray/bin/ips.csv'));
-        $dnsUpdateService->processFileContent($filecontent, $message);
-        //$dnsUpdateService->DNSCheck();
+        //$filecontent = file_get_contents(base_path('Xray/bin/ips.csv'));
+        //$dnsUpdateService->processFileContent($filecontent, $message);
+        $dnsUpdateService->DNSCheck();
         //dump($dnsUpdateService->DNSCheck());
         return 0;
     }

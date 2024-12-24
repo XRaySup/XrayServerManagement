@@ -203,13 +203,14 @@ class DnsUpdateService
             $name = $record['name'];
             $ip = $record['content'];
             $id = $record['id'];
-            $ipResponse = $IPResponses[$ip];
+
             $proxied = $record['proxied'] ? 'true' : 'false';
             // Skip records that do not match the subdomain pattern
             if (strpos($name, $this->subdomainPattern) === false) {
                 $this->logAndInfo("Skipping record: Name='$name' does not match the pattern.");
                 continue;
             }
+            $ipResponse = $IPResponses[$ip];
             $totalDNS++;
             // Check if proxy is turned off
             if ($proxied === 'true') {
