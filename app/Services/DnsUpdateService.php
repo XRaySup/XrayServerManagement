@@ -363,6 +363,7 @@ class DnsUpdateService
     }
     public function processFileContent($filecontent, $message)
     {
+        $startTime = time();
         $CountDNSExist = 0;
         $CountExpectedResponse = 0;
         $countIps = 0;
@@ -464,7 +465,7 @@ class DnsUpdateService
                 }
 
                 $progress = round(($countIps / $totaIpsToCheck) * 100, 2);
-                $elapsedTime = gmdate("H:i:s", time() - $lastUpdateTime);
+                $elapsedTime = gmdate("H:i:s", time() - $startTime );
                 $summaryMessage = "Process Running! $progress % \n" .
                     "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
                     "IPs with expected 400 response: $CountExpectedResponse400 \n" .
@@ -487,7 +488,7 @@ class DnsUpdateService
         }
 
         // Create a success message summarizing the counts if there are valid IPs
-        $elapsedTime = gmdate("H:i:s", time() - $lastUpdateTime);
+        $elapsedTime = gmdate("H:i:s", time() - $startTime );
         $summaryMessage = "Process complete! \n" .
             "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
             "IPs with expected 400 response: $CountExpectedResponse400 \n" .
