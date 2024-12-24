@@ -188,7 +188,7 @@ class DnsUpdateService
             "Process complete! \n" .
             "Total DNS checked: $totalDNS \n" .
             "IPs with expected 400 response: $validIps \n" .
-            "IPs with expected Xray response: $XrayValidIps" .
+            "IPs with expected Xray response: $XrayValidIps \n" .
             "Time elapsed: $elapsedTime";
         if ($this->messages) {
             foreach ($this->messages as $message) {
