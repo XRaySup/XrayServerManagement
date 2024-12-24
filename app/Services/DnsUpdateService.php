@@ -95,12 +95,7 @@ class DnsUpdateService
             ]);
         }
         $this->messages = $progressMessages;
-        $progressMessageText = $this->DNSCheck();
-
-        foreach ($progressMessages as $progressMessage) {
-
-            $this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-        }
+        $this->DNSCheck();
     }
     // public function botDNSCheck($progressMessage)
     // {
@@ -122,6 +117,7 @@ class DnsUpdateService
         $validIps = 0;
         $rayValidIps = 0;
         $totalDNS = 0;
+        $summaryMessage = '';
         $this->logAndOutput('Starting DNS check... for ' . $this->subdomainPattern);
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
@@ -326,10 +322,10 @@ class DnsUpdateService
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
         // Create a success message summarizing the counts if there are valid IPs
-        $summaryMessage = "$this->subdomainPattern Process complete! \n" .
-            "Total DNS checked: $totalDNS \n" .
-            "IPs with expected 400 response: $validIps \n" .
-            "IPs with expected Xray response: $rayValidIps";
+        // $summaryMessage = "$this->subdomainPattern Process complete! \n" .
+        //     "Total DNS checked: $totalDNS \n" .
+        //     "IPs with expected 400 response: $validIps \n" .
+        //     "IPs with expected Xray response: $rayValidIps";
         return $summaryMessage;
     }
     private function logAndInfo($message)
