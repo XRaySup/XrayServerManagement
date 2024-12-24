@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Google\Service\CloudBuild\Results;
 use Telegram\Bot\Laravel\Facades\Telegram;
 //use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -119,28 +120,28 @@ class DnsUpdateService
         $failLimit = 10;
         $validIps = 0;
         $rayValidIps = 0;
+        $totalDNS = 0;
+        $this->logAndOutput('Starting DNS check... for ' . $this->subdomainPattern);
         // Ensure the log file exists
         $this->ensureLogExists($this->logFile);
         if ($this->cloudflare->isConfiguredCorrectly() === false) {
             $this->logAndError('Cloudflare API Service is not correctly configured.');
             return 'Cloudflare API Service is not correctly configured.';
         }
-
-
-
         // Fetch DNS records from Cloudflare API
 
         $dnsRecords = $this->cloudflare->listDnsRecords();
-        $totalDNS = 0;
+
         if ($dnsRecords === false) {
             $this->logAndError("Failed to get DNS records. Exiting.");
-            exit(1);
+            return "Failed to get DNS records. Exiting.";
         }
         // Extract IPs from DNS records in one line
         $ipsToCheck = array_column($dnsRecords, 'content');
 
         // Now check the responses for all collected IPs
-        $ipResults = $this->check_ip_responses($ipsToCheck); // Check all IPs at once
+        //$Results400 = $this->check400Responses($ipsToCheck); // Check all IPs at once
+        $IPResponses = $this->checkIpResponses($ipsToCheck); // Check all IPs at once
 
 
         foreach ($dnsRecords as $record) {
@@ -149,10 +150,8 @@ class DnsUpdateService
             $name = $record['name'];
             $ip = $record['content'];
             $id = $record['id'];
+            $ipResponse = $IPResponses[$ip];
             $proxied = $record['proxied'] ? 'true' : 'false';
-            $this->logAndInfo("Processing record: Name='$name', IP='$ip', Proxied=$proxied");
-
-
             // Skip records that do not match the subdomain pattern
             if (strpos($name, $this->subdomainPattern) === false) {
                 $this->logAndInfo("Skipping record: Name='$name' does not match the pattern.");
@@ -161,60 +160,72 @@ class DnsUpdateService
             $totalDNS++;
             // Check if proxy is turned off
             if ($proxied === 'true') {
-                $this->logAndInfo("Proxy is currently on for record: Name='$name', IP='$ip'. Turning it off...");
 
                 // Update DNS record to turn on the proxy
                 $this->cloudflare->updateDnsRecord($id, $name, $ip);
-                $this->logAndInfo("Proxy has been turned on for record: Name='$name', IP='$ip'.");
+                //$this->logAndInfo("Proxy has been turned on for record: Name='$name', IP='$ip'.");
             }
 
             // Initialize response count for the record if not already set
             if (!isset($this->ipLogData[$ip])) {
                 $this->logAndInfo("IP='$ip' is not not in the .csv file. We add it to the list");
                 $this->ipLogData[$ip] = [
-                    'type' => $type,
-                    'name' => $name,
-                    'content' => $ip,
-                    'proxied' => false,
-                    'action' => 'No Change',
-                    'response' => '',
-                    'response_count' => 0
+
+                    'Action' => 'No Change',
+                    'Unexpected Response Count' => 0
                 ];
+
             }
-
-
-
+            //dump($this->ipLogData[$ip]);
+            //dump($Results);
+            $this->ipLogData[$ip] = array_merge($this->ipLogData[$ip], [
+                'Type' => $type,
+                'Name' => $name,
+                'Content' => $ip,
+                'Proxied' => false,
+                '400 Response' => $ipResponse['400 Response'] ?? false,
+                'Google Response' => $ipResponse['Google Response'],
+                '204 Response' => $ipResponse['204 Response'],
+                'Download Time' => $ipResponse['Download Time'],
+            ]);
+            $ipReport = $this->ipLogData[$ip];
+            //dump($ipReport);
             // Check the response from the IP address
-            $this->logAndInfo("Checking IP address: '$ip'");
-            $ExpectedResponse = $ipResults[$ip] ?? false; // Get the response from the array
-
-            $this->logAndInfo("Expected Response: " . ($ExpectedResponse ? 'True' : 'False'));
+            //$this->logAndInfo("Checking IP address: '$ip'");
+            //$Expected400Response = $ipResults[$ip] ?? false; // Get the response from the array
+            //$ipReport['400 Response'] = $Results400[$ip] ?? false;
+            //$this->logAndInfo("Expected Response: " . ($ExpectedResponse ? 'True' : 'False'));
 
             // Check and update unexpected response count
-            if ($ExpectedResponse === false) {
+            if (!$ipReport['400 Response']) {
                 // Increment the unexpected response count
-                $this->ipLogData[$ip]['response_count']++;
+                $ipReport['Unexpected Response Count']++;
 
                 // If the count reaches 5, delete the record
-                if ($this->ipLogData[$ip]['response_count'] >= $failLimit) {
-                    $this->logAndError("more than $failLimit times failed respond.");
+                if ($ipReport['Unexpected Response Count'] >= $failLimit) {
+                    //$this->logAndError("more than $failLimit times failed respond.");
                     $this->cloudflare->deleteDnsRecord($id);
-                    $this->logAndInfo("Record Removed: Name='$name', IP='$ip'.");
-                    $name = '-';
-                    $this->ipLogData[$ip]['action'] = 'Removed';
+                    //$this->logAndInfo("Record Removed: Name='$name', IP='$ip'.");
+                    $ipReport['Name'] = $name = '-';
+                    $ipReport['Action'] = 'Removed';
                 } else {
                     // Rename the DNS record if it is not already renamed
                     if (strpos($name, 'deleted.') === false) {
                         $name = 'deleted.' . $name;
                         $this->cloudflare->updateDnsRecord($id, $name, $ip);
-                        $this->ipLogData[$ip]['action'] = 'Renamed';
+                        $ipReport['Name'] = $name;
+                        $ipReport['Action'] = 'Renamed';
                     }
                 }
             } else {
                 // Response is as expected, rename the DNS record back to normal
                 $validIps += 1;
-                if($this->processIp($ip)==True){
-                    $this->logAndInfo("IP $ip passed all checks.");
+                //$ipXrayReport = $this->processIp($ip);
+                //$ipReport['Google Response'] = $ipXrayReport['Google Response'];
+                //$ipReport['204 Response'] = $ipXrayReport['204 Response'];
+                //$ipReport['Download Time'] = $ipXrayReport['Download Time'];
+                if ($ipResponse['Result'] == True) {
+                    //$this->logAndInfo("IP $ip passed all checks.");
                     $rayValidIps += 1;
                 }
                 if (strpos($name, 'deleted.') === 0) {
@@ -223,13 +234,8 @@ class DnsUpdateService
                     $this->ipLogData[$ip]['action'] = 'Restored';
                 }
             }
-
             // Update the CSV data for this record
-            $this->ipLogData[$ip]['type'] = $type;
-            $this->ipLogData[$ip]['name'] = $name;
-            $this->ipLogData[$ip]['content'] = $ip;
-            $this->ipLogData[$ip]['proxied'] = $proxied;
-            $this->ipLogData[$ip]['response'] = $ExpectedResponse;
+            $this->ipLogData[$ip] = $ipReport;
         }
 
         // Write updated CSV data
@@ -238,16 +244,19 @@ class DnsUpdateService
             $this->logAndError("Failed to open CSV file for writing.");
             return "Failed to open CSV file for writing.";
         }
-        fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', 'Response', 'Unexpected Response Count']);
+        fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', '400 Response', 'Google Response', '204 Response', 'Download Time', 'Unexpected Response Count']);
         foreach ($this->ipLogData as $data) {
             fputcsv($csvHandle, [
-                $data['type'],
-                $data['name'],
-                $data['content'],
-                $data['proxied'],
-                $data['action'],
-                $data['response'],
-                $data['response_count']
+            $data['Type'],
+            $data['Name'],
+            $data['Content'],
+            $data['Proxied'] ? 'True' : 'False',
+            $data['Action'],
+            $data['400 Response'] ? 'True' : 'False',
+            $data['Google Response'],
+            $data['204 Response'],
+            $data['Download Time'],
+            $data['Unexpected Response Count']
             ]);
         }
 
@@ -262,11 +271,11 @@ class DnsUpdateService
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
-                // Create a success message summarizing the counts if there are valid IPs
-                $summaryMessage = "$this->subdomainPattern Process complete! \n" .
-                "Total DNS checked: $totalDNS \n".
-                "IPs with expected 400 response: $validIps \n" .
-                "IPs with expected Xray response: $rayValidIps";
+        // Create a success message summarizing the counts if there are valid IPs
+        $summaryMessage = "$this->subdomainPattern Process complete! \n" .
+            "Total DNS checked: $totalDNS \n" .
+            "IPs with expected 400 response: $validIps \n" .
+            "IPs with expected Xray response: $rayValidIps";
         return $summaryMessage;
     }
     private function logAndInfo($message)
@@ -355,22 +364,24 @@ class DnsUpdateService
         //$this->logAndOutput("IPs to check: " . implode(', ', $ipsToCheck));
         $totaIpsToCheck = count($ipsToCheck);
         // Check the IP responses
-        $ipResults = $this->check_ip_responses($ipsToCheck);
+        //$ipResults = $this->check400Responses($ipsToCheck);
+        $ipResults = $this->checkIpResponses($ipsToCheck);
         //dump($ipResults);
         $lastUpdateTime = time();
         foreach ($ipsToCheck as $ip) {
             $countIps++;
+            $ipResult = $ipResults[$ip];
             // Validate the IP address
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
                 $ExpectedResponse = false;
-                $ExpectedResponse400 = $ipResults[$ip] ?? false; // Get the response from the array
+                //$ExpectedResponse400 = $ipResults[$ip] ?? false; // Get the response from the array
                 // Process each IP
 
-                if ($ExpectedResponse400) {
+                if ($ipResult['400 Response']) {
                     $CountExpectedResponse400 += 1;
-                    $ExpectedResponse = $this->processIp($ip);
+                    //$ExpectedResponse = $this->processIp($ip);
                     //$this->logAndOutput("IP $ExpectedResponse passed all checks.");
-                    if ($ExpectedResponse) {
+                    if ($ipResult['Result']) {
                         //$this->logAndOutput("IP $ip passed all checks.");
                         $CountExpectedResponse++;
 
@@ -446,7 +457,37 @@ class DnsUpdateService
             ]
         ];
     }
-    private function check_ip_responses(array $ipAddresses)
+    public function checkIpResponses(array $ipAddresses): array
+    {
+        $responses = [];
+
+        // Check 400 responses
+        $responses400 = $this->check400Responses($ipAddresses);
+
+        foreach ($ipAddresses as $ip) {
+            $result = [
+                'IP' => $ip,
+                '400 Response' => $responses400[$ip] ?? false,
+                'Google Response' => '-',
+                '204 Response' => '-',
+                'Download Time' => '-',
+                'File Size' => '-',
+                'Result' => false
+            ];
+
+            if ($result['400 Response']) {
+                $ipXrayReport = $this->processIp($ip);
+                $result = array_merge($result, $ipXrayReport);
+            }
+  
+            $responses[$ip] = $result;
+            $this->logAndOutput('IP: ' . $ip . ' 400 Response: ' . ($result['400 Response'] ? 'True' : 'False') . ' Google Response: ' . $result['Google Response'] . ' 204 Response: ' . $result['204 Response'] . ' Download Time: ' . $result['Download Time'] . ' File Size: ' . $result['File Size']);
+        }
+
+        return $responses;
+    }
+
+    private function check400Responses(array $ipAddresses)
     {
         $multiCurl = curl_multi_init();  // Initialize multi-cURL
         $curlHandles = [];  // Store individual cURL handles
@@ -481,7 +522,7 @@ class DnsUpdateService
 
             if (curl_errno($ch)) {
                 $error = curl_error($ch);
-                $this->logAndInfo("Error for IP $ipAddress: $error");
+                //$this->logAndInfo("Error for IP $ipAddress: $error");
                 $responses[$ipAddress] = false;
             } else {
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -489,10 +530,10 @@ class DnsUpdateService
                 $headers = substr($response, 0, $headerSize);
 
                 if ($httpCode == 400 && stripos($headers, 'cloudflare') !== false) {
-                    $this->logAndInfo("Cloudflare server detected with 400 Bad Request for IP $ipAddress");
+                    //$this->logAndInfo("Cloudflare server detected with 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = true;
                 } else {
-                    $this->logAndInfo("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
+                   // $this->logAndInfo("Not a Cloudflare server or not 400 Bad Request for IP $ipAddress");
                     $responses[$ipAddress] = false;
                 }
             }
@@ -516,7 +557,7 @@ class DnsUpdateService
             }
 
             // Write CSV header
-            fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', 'Response', 'Unexpected Response Count']);
+            fputcsv($csvHandle, ['Type', 'Name', 'Content', 'Proxied', 'Action', '400 Response', 'Google Response', '204 Response', 'Download Time', 'Unexpected Response Count']);
             fclose($csvHandle);
         }
         $ipLogData = [];
@@ -527,13 +568,16 @@ class DnsUpdateService
                     // Use content (IP address) as the unique key
                     $key = $row[2]; // IP address
                     $ipLogData[$key] = [
-                        'type' => $row[0],
-                        'name' => $row[1],
-                        'content' => $row[2],
-                        'proxied' => $row[3],
-                        'action' => $row[4],
-                        'response' => $row[5],
-                        'response_count' => (int) ($row[6] ?? 0),
+                        'Type' => $row[0],
+                        'Name' => $row[1],
+                        'Content' => $row[2],
+                        'Proxied' => $row[3],
+                        'Action' => $row[4],
+                        '400 Response' => $row[5],
+                        'Google Response' => $row[6],
+                        '204 Response' => $row[7],
+                        'Download Time' => $row[8],
+                        'Unexpected Response Count' => (int) ($row[9] ?? 0),
                     ];
                 }
             }
@@ -580,68 +624,58 @@ class DnsUpdateService
 
         return $success;
     }
-    public function processIp($ipAddress): bool
+    public function processIp($ipAddress): array
     {
-        $this->logAndOutput("Checking IP: $ipAddress");
+        //$this->logAndOutput("Checking IP: $ipAddress");
         $result = false;
+        $response204 = '-';
+        $downloadTime = '-';
+        $actualFileSize = '-';
+        //$this->logAndOutput("IP $ipAddress passed HTTP 400 check. Starting Xray check...");
 
-
-        $this->logAndOutput("IP $ipAddress passed HTTP check. Starting Xray check...");
-
-        // Encode IP in Base64 format
-        $base64Ip = base64_encode($ipAddress);
-
-        // Update the Xray config with the Base64 IP
-        $configContent = file_get_contents($this->xrayConfigFile);
-        $updatedConfig = str_replace('PROXYIP', $base64Ip, $configContent);
-        file_put_contents($this->tempConfigFile, $updatedConfig);
-
-        // Run Xray in the background and perform 204 check
-        $this->runXray();
+        $this->runXrayWithProxyIP($ipAddress);
         sleep(1);
-        $this->logAndOutput("after sleep");
-        // Perform the 204 No Content check via Xray proxy
-        $xrayCheck = $this->curlRequest("https://cp.cloudflare.com/generate_204", 1, true);
-        $this->logAndOutput('204 Check Response is: ' . $xrayCheck);  // Log the response            
-        if ($xrayCheck == "204") {
-            //$this->logAndOutput("204 Check Response is: $xrayCheck");
 
-            // Download Test
-            $downloadTime = $this->downloadTest();
+        // Perform the Google probe check via Xray proxy
+        $googleProbeResponse = $this->curlRequest("https://www.google.com", 3, true);
 
-            // Check if the downloaded file size matches the requested size
-            $downloadedFilePath = "$this->tempDir/temp_downloaded_file";
-            $actualFileSize = 0; // Initialize the variable
-            if (file_exists($downloadedFilePath)) {
-                $actualFileSize = filesize($downloadedFilePath);
-                if ($actualFileSize == $this->fileSize) {
-                    $this->logAndOutput("Downloaded file size matches the requested size.");
-                    file_put_contents($this->validIpsCsv, "$ipAddress\n", FILE_APPEND);
-                    $result = true;
-                } else {
-                    $this->logAndOutput("Downloaded file size does not match the requested size.");
-                }
-            } else {
-                $this->logAndOutput("Downloaded file does not exist.");
-            }
-
-            // Record result in CSV
-            $this->recordResult($ipAddress, '400', $xrayCheck, $downloadTime, $actualFileSize);
-
-            // Clean up temporary file
-            if (file_exists($downloadedFilePath)) {
-                unlink($downloadedFilePath);
-            } else {
-                $this->logAndOutput("Temporary file does not exist, no need to delete.");
-            }
+        if ($googleProbeResponse != 200) {
+            //$this->logAndOutput('Google Probe Response is: ' . $googleProbeResponse);  // Log the response
+            $this->logAndOutput("Google Probe Check failed. Google Probe Response is: $googleProbeResponse");
         } else {
-            // Handle the case where the 204 check fails
+            // Perform the 204 No Content check via Xray proxy
+            $response204 = $this->curlRequest("https://cp.cloudflare.com/generate_204", 3, true);
+            //$this->logAndOutput('204 Check Response is: ' . $response204);  // Log the response 
+
+            if ($response204 == "204") {
+                //$this->logAndOutput("204 Check Response is: $xrayCheck");
+
+                // Download Test
+                [$result, $downloadTime, $actualFileSize] = $this->downloadTest();
+
+                //file_put_contents($this->validIpsCsv, "$ipAddress\n", FILE_APPEND);
+
+                // Record result in CSV
+                //$this->recordResult($ipAddress, '400', $response204, $downloadTime, $actualFileSize);
+
+
+            } else {
+
+                //$this->logAndOutput("IP $ipAddress failed the 204 check.");
+            }
         }
-        $this->logAndOutput("closing the xray.");
+
+        //$this->logAndOutput("closing the xray.");
         // Stop Xray process
         $this->stopXray();
 
-        return $result;
+        return [
+            'Result' => $result,
+            'Google Response' => $googleProbeResponse,
+            '204 Response' => $response204,
+            'Download Time' => $downloadTime,
+            'File Size' => $actualFileSize
+        ];
     }
 
     private function curlRequest($url, $timeout, $useProxy = false)
@@ -662,7 +696,7 @@ class DnsUpdateService
     private function runXray()
     {
         $command = "$this->xrayExecutable -config $this->tempConfigFile";
-        $this->logAndOutput("Running command: $command");
+        //$this->logAndOutput("Running command: $command");
 
         if (PHP_OS_FAMILY === 'Windows') {
             // Windows
@@ -673,11 +707,24 @@ class DnsUpdateService
         }
 
         if (is_resource($process)) {
-            $this->logAndOutput("Xray process started successfully.");
+            //$this->logAndOutput("Xray process started successfully.");
             pclose($process);
         } else {
             $this->logAndOutput("Failed to start the xray process.");
         }
+    }
+    private function runXrayWithProxyIP($proxyIP)
+    {
+        // Encode IP in Base64 format
+        $base64Ip = base64_encode($proxyIP);
+
+        // Update the Xray config with the Base64 IP
+        $configContent = file_get_contents($this->xrayConfigFile);
+        $updatedConfig = str_replace('PROXYIP', $base64Ip, $configContent);
+        file_put_contents($this->tempConfigFile, $updatedConfig);
+
+        // Run Xray in the background and perform 204 check
+        $this->runXray();
     }
 
     private function stopXray()
@@ -691,23 +738,42 @@ class DnsUpdateService
         }
     }
 
-    private function downloadTest()
+    private function downloadTest(): array
     {
+        $downloadedFilePath = "$this->tempDir/temp_downloaded_file";
         $outputFile = "$this->tempDir/temp_output.txt";
+        $downloadTime = '-';
+        $actualFileSize = '-';
+        $result = false;
+        // Download the file using cURL
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows
-            exec("powershell -command \"& {curl.exe -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $this->tempDir/temp_downloaded_file}\" > $outputFile");
+            exec("powershell -command \"& {curl.exe -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $downloadedFilePath}\" > $outputFile");
         } else {
             // Linux
-            exec("curl -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $this->tempDir/temp_downloaded_file > $outputFile");
+            exec("curl -s -w 'TIME: %{time_total}' --proxy http://127.0.0.1:8080 https://speed.cloudflare.com/__down?bytes=$this->fileSize --output $downloadedFilePath > $outputFile");
+        }
+        // Check if the downloaded file size matches the requested size
+        if (file_exists($downloadedFilePath)) {
+            $actualFileSize = filesize($downloadedFilePath);
+            if ($actualFileSize == $this->fileSize) {
+                //$this->logAndOutput("Downloaded file size matches the requested size.");
+                // Get the download time from the output file
+                $output = file_get_contents($outputFile);
+                if (preg_match('/TIME: (\d+\.\d+)/', $output, $matches)) {
+                    $downloadTime = round($matches[1] * 1000); // Convert to milliseconds
+                }
+                $result = true;
+                unlink($downloadedFilePath);
+            } else {
+                //$this->logAndOutput("Downloaded file size does not match the requested size.");
+            }
+        } else {
+            $this->logAndOutput("Downloaded file does not exist.");
         }
 
-        $downloadTime = 0;
-        $output = file_get_contents($outputFile);
-        if (preg_match('/TIME: (\d+\.\d+)/', $output, $matches)) {
-            $downloadTime = round($matches[1] * 1000); // Convert to milliseconds
-        }
-        return $downloadTime;
+
+        return [$result, $downloadTime, $actualFileSize];
     }
 
     private function recordResult($ipAddress, $httpCheck, $xrayCheck, $downloadTime, $fileSize)

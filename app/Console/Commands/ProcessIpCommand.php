@@ -28,10 +28,12 @@ class ProcessIpCommand extends Command
      */
     public function handle()
     {
+        $this->info('Processing IP address...');
         // $ipAddress = $this->argument('ip');
          $dnsUpdateService = new DnsUpdateService(function ($message) {
              $this->info($message);
          });
+
          $telegram = Telegram::bot('Proxy');
          $message = $telegram->sendMessage([
              'chat_id' => env('TELEGRAM_TEST_ADMIN_IDS'),
@@ -40,7 +42,9 @@ class ProcessIpCommand extends Command
 
         //$dnsUpdateService->processIp($ipAddress);
         $filecontent = file_get_contents(base_path('Xray/bin/ips.csv'));
-        $dnsUpdateService->processFileContent($filecontent,$message);
+        $dnsUpdateService->processFileContent($filecontent, $message);
+
+        //dump($dnsUpdateService->DNSCheck());
         return 0;
     }
 }
