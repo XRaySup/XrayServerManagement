@@ -430,7 +430,7 @@ class DnsUpdateService
 
                 // Validate the IP address
                 if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                    $ExpectedResponse = false;
+                    //$ExpectedResponse = false;
 
                     if ($ipResult['400 Response']) {
                         $CountExpectedResponse400 += 1;
@@ -457,7 +457,7 @@ class DnsUpdateService
                     }
 
                     // Add DNS record if the expected response is true and IP doesn't exist in DNS
-                    if ($ExpectedResponse && !$ExistInDNS) {
+                    if ($ipResult['Result'] && !$ExistInDNS) {
                         $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
                         $this->logAndOutput("add to dns.");
                         $countAdded++;
