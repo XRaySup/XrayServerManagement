@@ -212,7 +212,7 @@ function genGroupServersLink($servers, $filter, $icon)
                             foreach ($client['links'] as $clientLink) {
                                 $linkN += 1;
                                 $parts = explode('#', $clientLink);
-                                $clientLink = $parts[0] . '#' . $icon . $server->remark;
+                                $clientLink = $parts[0] . '#' . $icon . $parts[1];
                                 $inboundlinks .= $clientLink . "-" . $linkN . "\n";
                             }
                         }
