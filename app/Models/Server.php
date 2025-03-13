@@ -150,10 +150,12 @@ class Server extends Model
         }
         $inboundStat = $this->getInboundsStat();
 
-        // if ($inboundStat == null) {
-        //     $this->update(['status' => 'OFFLINE']);
-        //     return;
-        // }
+        if ($inboundStat === null) {
+            // Log the error and skip the server
+            Log::error("Failed to connect to server: " . $this->address);
+            return;
+        }
+
         $this->update(['status' => 'ONLINE']);
         $this->update(['inboundStat' => $inboundStat]);
         $url = parse_url($this->address);
@@ -164,6 +166,7 @@ class Server extends Model
         } else {
             return;
         }
+        
         foreach ($inboundStat as $index => $inbound) {
 
             $inbound['settings'] = json_decode($inbound['settings'], true);
@@ -308,18 +311,13 @@ class Server extends Model
 
     private function makeApiRequest($url, $cookies, $data = null, $method = 'GET')
     {
-
-        //dump($cookies);
         try {
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
                 'Cookie' => $cookies,
             ])->$method($url, $data);
-            //dump($response->json());
         } catch (\Exception $e) {
-            // Handle exceptions, log errors, or return false as needed
-            // You can access the exception message with $e->getMessage()
-
+            // Handle exceptions, log errors, and return false as needed
             return [
                 'data' => null,
                 'success' => false,
