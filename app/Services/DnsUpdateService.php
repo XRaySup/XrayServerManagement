@@ -344,7 +344,8 @@ class DnsUpdateService
 
             // Check if the IP passed the 400 response and Xray checks
             if ($response['400 Response'] && $response['Result']) {
-                return "IP $ip is valid and passed all checks.";
+                $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
+                return "IP $ip is valid, passed all checks, and has been added to DNS records.";
             } elseif ($response['400 Response']) {
                 return "IP $ip passed the 400 response check but failed the Xray check.";
             } else {
