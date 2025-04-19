@@ -169,7 +169,7 @@ class HandleTelegramMessage implements ShouldQueue
                 $this->sendReply("Result for IP $text: $result");
                 return; // Exit after handling the IP
             }
-
+            $this->sendReply("Result for IP $text: is not a valid IP address");
             // Handle other text commands
             switch ($text) {
                 case '/dns400check':
