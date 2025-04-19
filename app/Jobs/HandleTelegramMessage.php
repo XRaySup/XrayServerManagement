@@ -164,10 +164,10 @@ class HandleTelegramMessage implements ShouldQueue
             $foundIp = false; // Flag to track if any valid IP is found
             foreach ($lines as $line) {
                 $line = trim($line); // Remove any extra whitespace
-                $this->sendReply("check $line");
+                //$this->sendReply("check $line");
                 // Check if the line is a valid IP address
                 if (filter_var($line, FILTER_VALIDATE_IP)) {
-                    $this->sendReply("check $line is IP");
+                    //$this->sendReply("check $line is IP");
                     $foundIp = true; // Set the flag to true
                     // Pass the IP to the DnsUpdateService to check a single IP
                     $dnsUpdateService = new DnsUpdateService();
@@ -178,8 +178,8 @@ class HandleTelegramMessage implements ShouldQueue
                 }
             }
             // If no valid IP was found, reply with unknown command
-            if (!$foundIp) {
-                $this->sendReply("Unknown command.");
+            if ($foundIp) {
+                return;
             }
             // Handle other text commands
             switch ($text) {
