@@ -157,19 +157,31 @@ class HandleTelegramMessage implements ShouldQueue
                 $this->sendReply("Error: {$e->getMessage()}");
             }
         } elseif (isset($message['text'])) {
-            switch ($message['text']) {
-                case '/dns400check':
+            // Check if the text is a valid IP address
+            $text = $message['text'];
+            if (filter_var($text, FILTER_VALIDATE_IP)) {
+                // Pass the IP to the DnsUpdateService to check a single IP
+                $dnsUpdateService = new DnsUpdateService();
+                $result = $dnsUpdateService->checkSingleIP($text);
 
-                    // Send initial message about processing start
-                    $dnsUpdateService = new DnsUpdateService();
-                    $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
-                    $progressMessage = $this->sendReply($initialReply);
-                    $dnsUpdateService->messages = [$progressMessage];
-                    $progressMessageText = $dnsUpdateService->DNSCheck();
-                    //$this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-                    break;
-                default:
-                    $this->sendReply("Unknown command.");
+                // Send the result back to the user
+                $this->sendReply("Result for IP $text: $result");
+            } else {
+                switch ($text) {
+                    case '/dns400check':
+
+                        // Send initial message about processing start
+                        $dnsUpdateService = new DnsUpdateService();
+                        $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
+                        $progressMessage = $this->sendReply($initialReply);
+                        $dnsUpdateService->messages = [$progressMessage];
+                        $progressMessageText = $dnsUpdateService->DNSCheck();
+                        //$this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
+                        break;
+                    default:
+
+                        $this->sendReply("Unknown command.");
+                }
             }
 
         } else {

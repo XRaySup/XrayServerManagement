@@ -328,6 +328,36 @@ class DnsUpdateService
         //     "IPs with expected Xray response: $rayValidIps";
         return $summaryMessage;
     }
+    public function checkSingleIP(string $ip): string
+{
+    // Validate the IP address
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        return "Invalid IP address: $ip";
+    }
+
+    try {
+        // Check the IP response
+        $ipResponse = $this->checkIpResponses([$ip]);
+
+        if (isset($ipResponse[$ip])) {
+            $response = $ipResponse[$ip];
+
+            // Check if the IP passed the 400 response and Xray checks
+            if ($response['400 Response'] && $response['Result']) {
+                return "IP $ip is valid and passed all checks.";
+            } elseif ($response['400 Response']) {
+                return "IP $ip passed the 400 response check but failed the Xray check.";
+            } else {
+                return "IP $ip failed the 400 response check.";
+            }
+        } else {
+            return "No response received for IP $ip.";
+        }
+    } catch (\Exception $e) {
+        Log::error("Error checking IP $ip: " . $e->getMessage());
+        return "Error checking IP $ip: " . $e->getMessage();
+    }
+}
     private function logAndInfo($message)
     {
         // Log message to terminal and log file
