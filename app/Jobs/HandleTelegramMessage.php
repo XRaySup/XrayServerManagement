@@ -159,15 +159,25 @@ class HandleTelegramMessage implements ShouldQueue
         if (isset($message['text'])) {
             $text = $message['text'];
 
-            // Check if the text is a valid IP address
-            if (filter_var($text, FILTER_VALIDATE_IP)) {
-                // Pass the IP to the DnsUpdateService to check a single IP
-                $dnsUpdateService = new DnsUpdateService();
-                $result = $dnsUpdateService->checkSingleIP($text);
+            // Check if the text contains multiple lines
+            $lines = explode("\n", $text);
+            $foundIp = false; // Flag to track if any valid IP is found
+            foreach ($lines as $line) {
+                $line = trim($line); // Remove any extra whitespace
+                // Check if the line is a valid IP address
+                if (filter_var($line, FILTER_VALIDATE_IP)) {
+                    $foundIp = true; // Set the flag to true
+                    // Pass the IP to the DnsUpdateService to check a single IP
+                    $dnsUpdateService = new DnsUpdateService();
+                    $result = $dnsUpdateService->checkSingleIP($line);
 
-                // Send the result back to the user
-                $this->sendReply("Result for IP $text: $result");
-                return; // Exit after handling the IP
+                    // Send the result back to the user
+                    $this->sendReply("Result for IP $line: $result");
+                }
+            }
+            // If no valid IP was found, reply with unknown command
+            if (!$foundIp) {
+                $this->sendReply("Unknown command.");
             }
             // Handle other text commands
             switch ($text) {
