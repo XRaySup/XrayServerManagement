@@ -120,16 +120,14 @@ class HandleTelegramMessage implements ShouldQueue
     private function handleProxyBotMessage()
     {
         Log::info('Handling ProxyBot message.');
-        // Add your logic here
-        //$this->sendReply('Hello from FreeXrayBot!');
+
         if ($this->checkUser(env('TELEGRAM_PROXY_ADMIN_IDS')) == false) {
             return;
         }
+
         $message = $this->requestData['message'];
-        //$message = $request->input('message');
-        // $chatId = $message['chat']['id'];
-        // $messageId = $message['message_id'];
-        // Continue if the user is an admin
+
+        // Handle document processing
         if (isset($message['document'])) {
             $fileId = $message['document']['file_id'];
 
@@ -142,13 +140,11 @@ class HandleTelegramMessage implements ShouldQueue
             }
 
             try {
-
                 // Download the file from Telegram
                 $fileContents = Http::get("https://api.telegram.org/file/bot" . $this->telegram->getAccessToken() . "/" . $this->telegram->getFile(['file_id' => $fileId])->getFilePath())->body();
+
                 // Dispatch a single job with the entire file contents
                 ProcessIpsJob::dispatch($fileContents, $progressMessage);
-                //$progressMessage = $this->sendReply($chatId, $messageId, 'test');
-
             } catch (\Telegram\Bot\Exceptions\TelegramResponseException $e) {
                 Log::error('Telegram API error: ' . $e->getMessage());
                 $this->sendReply("Error: {$e->getMessage()}");
@@ -156,9 +152,14 @@ class HandleTelegramMessage implements ShouldQueue
                 Log::error('General error: ' . $e->getMessage());
                 $this->sendReply("Error: {$e->getMessage()}");
             }
-        } elseif (isset($message['text'])) {
-            // Check if the text is a valid IP address
+            return; // Exit after processing the document
+        }
+
+        // Handle text message processing
+        if (isset($message['text'])) {
             $text = $message['text'];
+
+            // Check if the text is a valid IP address
             if (filter_var($text, FILTER_VALIDATE_IP)) {
                 // Pass the IP to the DnsUpdateService to check a single IP
                 $dnsUpdateService = new DnsUpdateService();
@@ -166,28 +167,27 @@ class HandleTelegramMessage implements ShouldQueue
 
                 // Send the result back to the user
                 $this->sendReply("Result for IP $text: $result");
-            } else {
-                switch ($text) {
-                    case '/dns400check':
-
-                        // Send initial message about processing start
-                        $dnsUpdateService = new DnsUpdateService();
-                        $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
-                        $progressMessage = $this->sendReply($initialReply);
-                        $dnsUpdateService->messages = [$progressMessage];
-                        $progressMessageText = $dnsUpdateService->DNSCheck();
-                        //$this->updateTelegramMessageWithRetry($progressMessage, $progressMessageText);
-                        break;
-                    default:
-
-                        $this->sendReply("Unknown command.");
-                }
+                return; // Exit after handling the IP
             }
 
+            // Handle other text commands
+            switch ($text) {
+                case '/dns400check':
+                    $dnsUpdateService = new DnsUpdateService();
+                    $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
+                    $progressMessage = $this->sendReply($initialReply);
+                    $dnsUpdateService->messages = [$progressMessage];
+                    $progressMessageText = $dnsUpdateService->DNSCheck();
+                    $this->sendReply($progressMessageText);
+                    break;
+                default:
+                    $this->sendReply("Unknown command.");
+            }
         } else {
             $this->sendReply("Unknown command.");
         }
     }
+
     private function handleTestBotMessage()
     {
         Log::info('Handling ProxyBot message.');
