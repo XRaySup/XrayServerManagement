@@ -184,6 +184,7 @@ class HandleTelegramMessage implements ShouldQueue
                     $this->sendReply("Unknown command.");
             }
         } else {
+            $this->sendReply("check");
             $this->sendReply("Unknown command.");
         }
     }
