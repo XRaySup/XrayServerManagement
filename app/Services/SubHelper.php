@@ -155,8 +155,8 @@ function genMultiServersJson($servers, $filter)
 function genMultiServersLink($servers)
 {
 
-    $Testing  = Gdrive::get('Subs/' . 'Testing.txt');
-    $Donatet  = Gdrive::get('Subs/' . 'Donated.txt');
+    $Testing = Gdrive::get('Subs/' . 'Testing.txt');
+    $Donatet = Gdrive::get('Subs/' . 'Donated.txt');
     $VPNLinks = genGroupServersLink($servers, 'VPN', '⭐');
     $MNGLinks = genGroupServersLink($servers, 'MNG', '🕊');
     $VIPLinks = genGroupServersLink($servers, 'VIP', '💎') . "\n" . $Testing->file . "\n" . $VPNLinks . "\n" . $Donatet->file;
@@ -421,11 +421,23 @@ function genVlessLink($inbound, $client, $address, $remark)
             }
             break;
         case 'httpupgrade':
-            
+
             $httpupgrade = $stream['httpupgradeSettings'];
             $params['path'] = $httpupgrade['path'];
             $headers = $httpupgrade['headers'];
             $params['host'] = searchKey($headers, 'host');
+            break;
+        case 'xhttp':
+
+            $httpupgrade = $stream['xhttpSettings'];
+            $params['path'] = $httpupgrade['path'];
+            $headers = $httpupgrade['headers'];
+            $params['host'] = searchKey($headers, 'host');
+            if($params['host'] == '')
+            {
+                $params['host'] = searchKey($headers, 'hostt');
+            }
+
             break;
     }
 
@@ -552,7 +564,7 @@ function genVlessLink($inbound, $client, $address, $remark)
 
             foreach ($externalProxies as $index => $externalProxy) {
                 $newSecurity = $externalProxy['forceTls'];
-                
+
                 $dest = $externalProxy['dest'];
                 $port = (int) $externalProxy['port'];
                 $link = sprintf('vless://%s@%s:%d', $uuid, $dest, $port);
@@ -562,7 +574,7 @@ function genVlessLink($inbound, $client, $address, $remark)
                 $url = parse_url($link);
 
                 //parse_str($url['query'], $q);
-                if($dest == 'speedtest.net' && $newSecurity = 'TLS'){
+                if ($dest == 'speedtest.net' && $newSecurity = 'TLS') {
                     $params['security'] = 'tls';
 
                     $params['sni'] = 'speedtest.net';
