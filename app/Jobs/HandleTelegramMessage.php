@@ -188,8 +188,8 @@ class HandleTelegramMessage implements ShouldQueue
                     $initialReply = "Checking $dnsUpdateService->subdomainPattern :";
                     $progressMessage = $this->sendReply($initialReply);
                     $dnsUpdateService->messages = [$progressMessage];
-                    $progressMessageText = $dnsUpdateService->DNSCheck();
-                    $this->sendReply($progressMessageText);
+                    //$progressMessageText = $dnsUpdateService->DNSCheck();
+                    //$this->sendReply($progressMessageText);
                     break;
                 default:
                     $this->sendReply("Unknown command.");

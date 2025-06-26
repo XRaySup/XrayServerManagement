@@ -387,6 +387,14 @@ class Server extends Model
                 // echo 'shortID old: ' . $inbound['parsedStream']['realitySettings']['shortIds'][0] . ' New: ' . $shortID . ' .' . PHP_EOL;
                 // $inbound['parsedStream']['realitySettings']['shortIds'][0] = $shortID;
             }
+                    // Detect trojan protocol
+        if (isset($inbound['protocol']) && strtolower($inbound['protocol']) === 'trojan') {
+            foreach ($inbound['settings']['clients'] as $cid => $client) {
+                // Change password (random strong string)
+                $newPassword = bin2hex(random_bytes(8)); // 16-char hex
+                $inbound['settings']['clients'][$cid]['password'] = $newPassword;
+            }
+        }
 
 
             foreach ($inbound['settings']['clients'] as $cid => $client) {
