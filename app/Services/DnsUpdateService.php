@@ -726,17 +726,22 @@ class DnsUpdateService
         if ($googleProbeResponse != 200) {
             //$this->logAndOutput('Google Probe Response is: ' . $googleProbeResponse);  // Log the response
             $this->logAndOutput("Google Probe Check failed. Google Probe Response is: $googleProbeResponse");
-        } else {
+        } 
+   
             // Perform the 204 No Content check via Xray proxy
             $response204 = $this->curlRequest("https://cp.cloudflare.com/generate_204", 3, true);
-            //$this->logAndOutput('204 Check Response is: ' . $response204);  // Log the response 
+            $this->logAndOutput('204 Check Response is: ' . $response204);  // Log the response 
 
             if ($response204 == "204") {
                 //$this->logAndOutput("204 Check Response is: $xrayCheck");
 
                 // Download Test
                 [$result, $downloadTime, $actualFileSize] = $this->downloadTest();
-
+                if ($result) {
+                    $this->logAndOutput("IP $ipAddress passed the 204 check and download test." . $downloadTime . " ms, File Size: $actualFileSize bytes");
+                } else {
+                    $this->logAndOutput("IP $ipAddress failed the download test.");
+                }
                 //file_put_contents($this->validIpsCsv, "$ipAddress\n", FILE_APPEND);
 
                 // Record result in CSV
@@ -745,11 +750,11 @@ class DnsUpdateService
 
             } else {
 
-                //$this->logAndOutput("IP $ipAddress failed the 204 check.");
+                $this->logAndOutput("IP $ipAddress failed the 204 check.");
             }
-        }
+        
 
-        //$this->logAndOutput("closing the xray.");
+        $this->logAndOutput("closing the xray.");
         // Stop Xray process
         $this->stopXray();
 
