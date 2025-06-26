@@ -329,36 +329,36 @@ class DnsUpdateService
         return $summaryMessage;
     }
     public function checkSingleIP(string $ip): string
-{
-    // Validate the IP address
-    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-        return "Invalid IP address: $ip";
-    }
-
-    try {
-        // Check the IP response
-        $ipResponse = $this->checkIpResponses([$ip]);
-
-        if (isset($ipResponse[$ip])) {
-            $response = $ipResponse[$ip];
-
-            // Check if the IP passed the 400 response and Xray checks
-            if ($response['400 Response'] && $response['Result']) {
-                $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
-                return "IP $ip is valid, passed all checks, and has been added to DNS records.";
-            } elseif ($response['400 Response']) {
-                return "IP $ip passed the 400 response check but failed the Xray check.";
-            } else {
-                return "IP $ip failed the 400 response check.";
-            }
-        } else {
-            return "No response received for IP $ip.";
+    {
+        // Validate the IP address
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return "Invalid IP address: $ip";
         }
-    } catch (\Exception $e) {
-        Log::error("Error checking IP $ip: " . $e->getMessage());
-        return "Error checking IP $ip: " . $e->getMessage();
+
+        try {
+            // Check the IP response
+            $ipResponse = $this->checkIpResponses([$ip]);
+
+            if (isset($ipResponse[$ip])) {
+                $response = $ipResponse[$ip];
+
+                // Check if the IP passed the 400 response and Xray checks
+                if ($response['400 Response'] && $response['Result']) {
+                    $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
+                    return "IP $ip is valid, passed all checks, and has been added to DNS records.";
+                } elseif ($response['400 Response']) {
+                    return "IP $ip passed the 400 response check but failed the Xray check.";
+                } else {
+                    return "IP $ip failed the 400 response check.";
+                }
+            } else {
+                return "No response received for IP $ip.";
+            }
+        } catch (\Exception $e) {
+            Log::error("Error checking IP $ip: " . $e->getMessage());
+            return "Error checking IP $ip: " . $e->getMessage();
+        }
     }
-}
     private function logAndInfo($message)
     {
         // Log message to terminal and log file
@@ -495,7 +495,7 @@ class DnsUpdateService
                 }
 
                 $progress = round(($countIps / $totaIpsToCheck) * 100, 2);
-                $elapsedTime = gmdate("H:i:s", time() - $startTime );
+                $elapsedTime = gmdate("H:i:s", time() - $startTime);
                 $summaryMessage = "Process Running! $progress % \n" .
                     "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
                     "IPs with expected 400 response: $CountExpectedResponse400 \n" .
@@ -518,7 +518,7 @@ class DnsUpdateService
         }
 
         // Create a success message summarizing the counts if there are valid IPs
-        $elapsedTime = gmdate("H:i:s", time() - $startTime );
+        $elapsedTime = gmdate("H:i:s", time() - $startTime);
         $summaryMessage = "Process complete! \n" .
             "Total valid IPs checked: $countIps of $totaIpsToCheck \n" .
             "IPs with expected 400 response: $CountExpectedResponse400 \n" .
@@ -720,37 +720,37 @@ class DnsUpdateService
         $this->runXrayWithProxyIP($ipAddress);
         sleep(1);
 
-        // // Perform the Google probe check via Xray proxy
+        // Perform the Google probe check via Xray proxy
         $googleProbeResponse = $this->curlRequest("https://www.google.com", 3, true);
 
-        //     //$this->logAndOutput('Google Probe Response is: ' . $googleProbeResponse);  // Log the response
-             $this->logAndOutput("Google Probe Response is: $googleProbeResponse");
-   
-            // Perform the 204 No Content check via Xray proxy
-            $response204 = $this->curlRequest("https://cp.cloudflare.com/generate_204", 3, true);
-            $this->logAndOutput('204 Check Response is: ' . $response204);  // Log the response 
-
-            if ($response204 == "204") {
-                //$this->logAndOutput("204 Check Response is: $xrayCheck");
-
-                // Download Test
-                [$result, $downloadTime, $actualFileSize] = $this->downloadTest();
-                if ($result) {
-                    $this->logAndOutput("IP $ipAddress passed the 204 check and download test." . $downloadTime . " ms, File Size: $actualFileSize bytes");
-                } else {
-                    $this->logAndOutput("IP $ipAddress failed the download test.");
-                }
-                //file_put_contents($this->validIpsCsv, "$ipAddress\n", FILE_APPEND);
-
-                // Record result in CSV
-                //$this->recordResult($ipAddress, '400', $response204, $downloadTime, $actualFileSize);
+        $this->logAndOutput('Google Probe Response is: ' . $googleProbeResponse);  // Log the response
 
 
+        // Perform the 204 No Content check via Xray proxy
+        $response204 = $this->curlRequest("https://cp.cloudflare.com/generate_204", 3, true);
+        $this->logAndOutput('204 Check Response is: ' . $response204);  // Log the response 
+
+        if ($response204 == "204") {
+            //$this->logAndOutput("204 Check Response is: $xrayCheck");
+
+            // Download Test
+            [$result, $downloadTime, $actualFileSize] = $this->downloadTest();
+            if ($result) {
+                $this->logAndOutput("IP $ipAddress passed the 204 check and download test." . $downloadTime . " ms, File Size: $actualFileSize bytes");
             } else {
-
-                $this->logAndOutput("IP $ipAddress failed the 204 check.");
+                $this->logAndOutput("IP $ipAddress failed the download test.");
             }
-        
+            //file_put_contents($this->validIpsCsv, "$ipAddress\n", FILE_APPEND);
+
+            // Record result in CSV
+            //$this->recordResult($ipAddress, '400', $response204, $downloadTime, $actualFileSize);
+
+
+        } else {
+
+            $this->logAndOutput("IP $ipAddress failed the 204 check.");
+        }
+
 
         $this->logAndOutput("closing the xray.");
         // Stop Xray process
