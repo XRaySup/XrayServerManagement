@@ -190,7 +190,7 @@ class DnsUpdateService
             "Time elapsed: $elapsedTime";
         if ($this->messages) {
             foreach ($this->messages as $message) {
-                $this->updateTelegramMessageWithRetry($message, $summaryMessage);
+                //$this->updateTelegramMessageWithRetry($message, $summaryMessage);
             }
         }
         foreach ($dnsRecords as $record) {
@@ -321,12 +321,7 @@ class DnsUpdateService
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
-        // Create a success message summarizing the counts if there are valid IPs
-        // $summaryMessage = "$this->subdomainPattern Process complete! \n" .
-        //     "Total DNS checked: $totalDNS \n" .
-        //     "IPs with expected 400 response: $validIps \n" .
-        //     "IPs with expected Xray response: $rayValidIps";
-        return $summaryMessage;
+        return null;
     }
     public function checkSingleIP(string $ip): string
     {
@@ -748,7 +743,7 @@ class DnsUpdateService
         }
 
 
-        $this->logAndOutput("closing the xray.");
+        //$this->logAndOutput("closing the xray.");
         // Stop Xray process
         $this->stopXray();
 
