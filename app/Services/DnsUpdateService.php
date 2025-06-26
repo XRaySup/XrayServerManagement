@@ -190,7 +190,7 @@ class DnsUpdateService
             "Time elapsed: $elapsedTime";
         if ($this->messages) {
             foreach ($this->messages as $message) {
-                //$this->updateTelegramMessageWithRetry($message, $summaryMessage);
+                $this->updateTelegramMessageWithRetry($message, $summaryMessage);
             }
         }
         foreach ($dnsRecords as $record) {
