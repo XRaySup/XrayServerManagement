@@ -720,13 +720,13 @@ class DnsUpdateService
         $this->runXrayWithProxyIP($ipAddress);
         sleep(1);
 
-        // Perform the Google probe check via Xray proxy
+        // // Perform the Google probe check via Xray proxy
         $googleProbeResponse = $this->curlRequest("https://www.google.com", 3, true);
 
-        if ($googleProbeResponse != 200) {
-            //$this->logAndOutput('Google Probe Response is: ' . $googleProbeResponse);  // Log the response
-            $this->logAndOutput("Google Probe Check failed. Google Probe Response is: $googleProbeResponse");
-        } 
+        // if ($googleProbeResponse != 200 or $googleProbeResponse != 302) {
+        //     //$this->logAndOutput('Google Probe Response is: ' . $googleProbeResponse);  // Log the response
+             $this->logAndOutput("Google Probe Check failed. Google Probe Response is: $googleProbeResponse");
+        // } 
    
             // Perform the 204 No Content check via Xray proxy
             $response204 = $this->curlRequest("https://cp.cloudflare.com/generate_204", 3, true);
