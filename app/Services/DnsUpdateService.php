@@ -321,7 +321,7 @@ class DnsUpdateService
         // Upload log to Google Drive
         $this->uploadLogToGoogleDrive($this->logFile, 'DNSUpdate/dns_update.log');
         $this->logAndInfo("Log file has been uploaded to Google Drive.");
-        return null;
+        return "test";
     }
     public function checkSingleIP(string $ip): string
     {
