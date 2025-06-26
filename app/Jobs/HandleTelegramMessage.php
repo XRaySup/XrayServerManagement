@@ -166,13 +166,15 @@ class HandleTelegramMessage implements ShouldQueue
                 $line = trim($line); // Remove any extra whitespace
                 //$this->sendReply("check $line");
                 // Check if the line is a valid IP address
-                if (filter_var($line, FILTER_VALIDATE_IP)) {
+                if (
+                    filter_var($line, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ||
+                    filter_var($line, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
+                ) {
                     //$this->sendReply("check $line is IP");
                     $foundIp = true; // Set the flag to true
                     // Pass the IP to the DnsUpdateService to check a single IP
                     $dnsUpdateService = new DnsUpdateService();
                     $result = $dnsUpdateService->checkSingleIP($line);
-
                     // Send the result back to the user
                     $this->sendReply("Result for IP $line: $result");
                 }
