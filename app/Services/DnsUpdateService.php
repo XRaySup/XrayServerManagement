@@ -563,7 +563,7 @@ class DnsUpdateService
                 $result = array_merge($result, $ipXrayReport);
             }
 
-            $responses[$ip] = $result;
+            $responses[$ip] = ('IP: ' . $ip . ' 400 Response: ' . ($result['400 Response'] ? 'True' : 'False') . ' Google Response: ' . $result['Google Response'] . ' 204 Response: ' . $result['204 Response'] . ' Download Time: ' . $result['Download Time'] . ' File Size: ' . $result['File Size']);
             $this->logAndOutput('IP: ' . $ip . ' 400 Response: ' . ($result['400 Response'] ? 'True' : 'False') . ' Google Response: ' . $result['Google Response'] . ' 204 Response: ' . $result['204 Response'] . ' Download Time: ' . $result['Download Time'] . ' File Size: ' . $result['File Size']);
         }
 
