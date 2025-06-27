@@ -337,16 +337,22 @@ class DnsUpdateService
 
                 if (isset($ipResponse[$ip])) {
                     $response = $ipResponse[$ip];
-
+                    $reply = "IP: $ip\n" .
+                        "400 Response: " . ($response['400 Response'] ? 'True' : 'False') . "\n" .
+                        "Google Response: " . $response['Google Response'] . "\n" .
+                        "204 Response: " . $response['204 Response'] . "\n" .
+                        "Download Time: " . $response['Download Time'] . "\n" .
+                        "File Size: " . $response['File Size'] . "\n";
                     // Check if the IP passed the 400 response and Xray checks
                     if ($response['400 Response'] && $response['Result']) {
                         $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
-                        return "IP $ip is valid, passed all checks, and has been added to DNS records.";
+                        $reply =+ "IP $ip is valid, passed all checks, and has been added to DNS records.";
                     } elseif ($response['400 Response']) {
-                        return "IP $ip passed the 400 response check but failed the Xray check.";
+                        $reply =+ "IP $ip passed the 400 response check but failed the Xray check.";
                     } else {
-                        return "IP $ip failed the 400 response check.";
+                        $reply =+ "IP $ip failed the 400 response check.";
                     }
+                    return $reply;
                 } else {
                     return "No response received for IP $ip.";
                 }
@@ -563,7 +569,7 @@ class DnsUpdateService
                 $result = array_merge($result, $ipXrayReport);
             }
 
-            $responses[$ip] = ('IP: ' . $ip . ' 400 Response: ' . ($result['400 Response'] ? 'True' : 'False') . ' Google Response: ' . $result['Google Response'] . ' 204 Response: ' . $result['204 Response'] . ' Download Time: ' . $result['Download Time'] . ' File Size: ' . $result['File Size']);
+            $responses[$ip] = $result;
             $this->logAndOutput('IP: ' . $ip . ' 400 Response: ' . ($result['400 Response'] ? 'True' : 'False') . ' Google Response: ' . $result['Google Response'] . ' 204 Response: ' . $result['204 Response'] . ' Download Time: ' . $result['Download Time'] . ' File Size: ' . $result['File Size']);
         }
 
