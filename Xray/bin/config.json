@@ -112,7 +112,7 @@
     ]
   },
   "routing": {
-    "domainStrategy": "AsIs",
+    "domainStrategy": "UseIPv4",
     "rules": [
       {
         "type": "field",
