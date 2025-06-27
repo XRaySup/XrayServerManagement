@@ -326,32 +326,36 @@ class DnsUpdateService
     public function checkSingleIP(string $ip): string
     {
         // Validate the IP address
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            return "Invalid IP address: $ip";
-        }
+        if (
+            filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ||
+            filter_var(trim($ip, '[]'), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
+        ) {
 
-        try {
-            // Check the IP response
-            $ipResponse = $this->checkIpResponses([$ip]);
+            try {
+                // Check the IP response
+                $ipResponse = $this->checkIpResponses([$ip]);
 
-            if (isset($ipResponse[$ip])) {
-                $response = $ipResponse[$ip];
+                if (isset($ipResponse[$ip])) {
+                    $response = $ipResponse[$ip];
 
-                // Check if the IP passed the 400 response and Xray checks
-                if ($response['400 Response'] && $response['Result']) {
-                    $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
-                    return "IP $ip is valid, passed all checks, and has been added to DNS records.";
-                } elseif ($response['400 Response']) {
-                    return "IP $ip passed the 400 response check but failed the Xray check.";
+                    // Check if the IP passed the 400 response and Xray checks
+                    if ($response['400 Response'] && $response['Result']) {
+                        $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
+                        return "IP $ip is valid, passed all checks, and has been added to DNS records.";
+                    } elseif ($response['400 Response']) {
+                        return "IP $ip passed the 400 response check but failed the Xray check.";
+                    } else {
+                        return "IP $ip failed the 400 response check.";
+                    }
                 } else {
-                    return "IP $ip failed the 400 response check.";
+                    return "No response received for IP $ip.";
                 }
-            } else {
-                return "No response received for IP $ip.";
+            } catch (\Exception $e) {
+                Log::error("Error checking IP $ip: " . $e->getMessage());
+                return "Error checking IP $ip: " . $e->getMessage();
             }
-        } catch (\Exception $e) {
-            Log::error("Error checking IP $ip: " . $e->getMessage());
-            return "Error checking IP $ip: " . $e->getMessage();
+        }else {
+            return "Invalid IP address format: $ip";
         }
     }
     private function logAndInfo($message)
