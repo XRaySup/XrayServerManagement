@@ -346,11 +346,11 @@ class DnsUpdateService
                     // Check if the IP passed the 400 response and Xray checks
                     if ($response['400 Response'] && $response['Result']) {
                         $this->cloudflare->addDNSRecord($this->subdomainPattern, $ip);
-                        $reply =+ "IP $ip is valid, passed all checks, and has been added to DNS records.";
+                        $reply .= "IP $ip is valid, passed all checks, and has been added to DNS records.";
                     } elseif ($response['400 Response']) {
-                        $reply =+ "IP $ip passed the 400 response check but failed the Xray check.";
+                        $reply .= "IP $ip passed the 400 response check but failed the Xray check.";
                     } else {
-                        $reply =+ "IP $ip failed the 400 response check.";
+                        $reply .= "IP $ip failed the 400 response check.";
                     }
                     return $reply;
                 } else {
