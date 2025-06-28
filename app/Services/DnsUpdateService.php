@@ -584,6 +584,7 @@ class DnsUpdateService
         $responses = [];
 
         foreach ($ipAddresses as $ipAddress) {
+                        $this->logAndInfo("Checking 400 response for IP: $ipAddress");
             if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 $ipAddress = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
             }
