@@ -38,22 +38,22 @@ class CloudflareApiService
     {
         try {
             $response = Http::withHeaders([
-                'Authorization' => "Bearer {$this->apiKey}", // Ensure API key is used
-                'Content-Type' => 'application/json',
-            ])->{$method}($this->apiUrl . $endpoint, $data);
-    
+                        'Authorization' => "Bearer {$this->apiKey}", // Ensure API key is used
+                        'Content-Type' => 'application/json',
+                    ])->{$method}($this->apiUrl . $endpoint, $data);
+
             // Log the raw response for debugging
             //\Log::info('API Response', ['response' => $response->json()]);
-    
+
             if ($response->failed()) {
                 \Log::error('API Request Failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-    
+
                 // Decode the response body
                 $responseBody = $response->json();
-    
+
                 // Return detailed error information
                 return [
                     'success' => false,
@@ -62,14 +62,14 @@ class CloudflareApiService
                     'status' => $response->status(),
                 ];
             }
-    
+
             // Decode the response body to JSON array
             return $response->json();
         } catch (\Exception $e) {
             \Log::error('Exception during API request', [
                 'message' => $e->getMessage(),
             ]);
-    
+
             // Return error details
             return [
                 'success' => false,
@@ -83,27 +83,27 @@ class CloudflareApiService
         $records = [];
         $page = 1;
         $perPage = 100;
-    
+
         do {
             // Make the request with pagination
             $response = $this->makeRequest('get', "zones/{$this->zoneId}/dns_records", [
                 'page' => $page,
                 'per_page' => $perPage
             ]);
-    
+
             if (!$response['success']) {
                 return null;
             }
-    
+
             // Merge the result from the current page into the records array
             $records = array_merge($records, $response['result']);
-    
+
             // Check the result_info to determine if there are more pages
             $totalPages = $response['result_info']['total_pages'];
             $page++;
-            
+
         } while ($page <= $totalPages);
-    
+
         return $records;
     }
     public function getExistingDNSRecord($ip)
@@ -144,7 +144,7 @@ class CloudflareApiService
 
         $response = $this->makeRequest('post', "zones/{$this->zoneId}/dns_records", $data);
 
-        if (isset($response['errors'])) {
+        if (empty($response['success']) || !empty($response['errors'])) {
             \Log::error('Error adding DNS record', [
                 'response' => $response,
             ]);
@@ -178,17 +178,17 @@ class CloudflareApiService
             'ttl' => $ttl,
             'proxied' => $proxied,
         ];
-    
+
         // Attempt to update the DNS record
         $response = $this->makeRequest('put', "zones/{$this->zoneId}/dns_records/{$recordId}", $data);
-        \Log::info('Cloudflare updateDnsRecord response', [
-            'response' => $response,
-        ]);
+        // \Log::info('Cloudflare updateDnsRecord response', [
+        //     'response' => $response,
+        // ]);
         // Check if 'success' key is present
         if (!isset($response['success']) || !$response['success']) {
             $errorCode = $response['errors'][0]['code'] ?? 'Unknown Code';
             $errorMessage = $response['errors'][0]['message'] ?? 'Unknown Error';
-    
+
             if ($errorCode === 81058) {
                 // Record already exists, so delete it and retry the update
                 $response = $this->makeRequest('delete', "zones/{$this->zoneId}/dns_records/{$recordId}");
@@ -199,10 +199,10 @@ class CloudflareApiService
                     ]);
                     return null;
                 }
-    
+
                 // Retry the update after deletion
                 // $response = $this->makeRequest('put', "zones/{$this->zoneId}/dns_records/{$recordId}", $data);
-    
+
                 // if (!isset($response['success']) || !$response['success']) {
                 //     \Log::error('Error updating DNS record after deletion', [
                 //         'response' => $response,
@@ -216,7 +216,7 @@ class CloudflareApiService
                 return null;
             }
         }
-    
+
         return $response['result'];
     }
 
@@ -224,8 +224,8 @@ class CloudflareApiService
     {
         $response = $this->makeRequest('delete', "zones/{$this->zoneId}/dns_records/{$recordId}");
 
-        if (isset($response['errors'])) {
-            \Log::error('Error deleting DNS record', [
+        if (empty($response['success']) || !empty($response['errors'])) {
+            \Log::error('Error adding DNS record', [
                 'response' => $response,
             ]);
             return null;

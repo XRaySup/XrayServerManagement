@@ -589,7 +589,7 @@ class DnsUpdateService
             if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 $formatIP = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
             }
-            $this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $formatIP");
+            //$this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $formatIP");
             $ch = curl_init();
 
             curl_setopt($ch, CURLOPT_URL, "http://$formatIP");
@@ -810,11 +810,11 @@ class DnsUpdateService
     }
     private function runXrayWithProxyIP($proxyIP)
     {
-        log::info("Running Xray with proxy IP: $proxyIP");
+        //log::info("Running Xray with proxy IP: $proxyIP");
         if (filter_var($proxyIP, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             $proxyIP = '[' . trim($proxyIP, '[]') . ']';
         }
-        log::info("Running Xray with proxy IP: $proxyIP");
+        //log::info("Running Xray with proxy IP: $proxyIP");
         // Encode IP in Base64 format
         $base64Ip = base64_encode($proxyIP);
 
