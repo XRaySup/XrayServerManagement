@@ -584,15 +584,15 @@ class DnsUpdateService
         $responses = [];
 
         foreach ($ipAddresses as $ipAddress) {
-            $ip = trim($ipAddress); // Ensure no extra spaces
+            $formatIP = $ipAddress;
                         //$this->logAndInfo("Checking 400 response for IP: $ipAddress");
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-                $ip = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
+            if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                $formatIP = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
             }
-            //$this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $ip");
+            $this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $formatIP");
             $ch = curl_init();
 
-            curl_setopt($ch, CURLOPT_URL, "http://$ip");
+            curl_setopt($ch, CURLOPT_URL, "http://$formatIP");
             curl_setopt($ch, CURLOPT_PORT, 443); // Use port 443 without HTTPS
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
