@@ -350,15 +350,20 @@ class DnsUpdateService
                         "204 Response: " . $response['204 Response'] . "\n" .
                         "Download Time: " . $response['Download Time'] . "\n" .
                         "File Size: " . $response['File Size'] . "\n";
+
+                    $skipIps = array_map('trim', explode(',', config('app.skip_ips', '')));
+                    if (in_array($ip, $skipIps)) {
+                        $reply .= "IP $ip is in the skip list. No action taken.\n";
+                        $this->logAndInfo("IP $ip is in the skip list. No action taken.");
+                        return $reply;
+                    }
+
+
                     // Check if the IP passed the 400 response and Xray checks
+
                     if ($response['400 Response'] && $response['Result']) {
-                        $skipIps = array_map('trim', explode(',', config('app.skip_ips', '')));
-                        if (!in_array($ip, $skipIps)) {
-                            $this->cloudflare->addDNSRecord($this->subdomainPattern, trim($ip, '[]'));
-                        }else {
-                            $reply .= "IP $ip is in the skip list. No action taken.";
-                        }
-                        //$this->cloudflare->addDNSRecord($this->subdomainPattern, trim($ip, '[]'));
+
+                        $this->cloudflare->addDNSRecord($this->subdomainPattern, trim($ip, '[]'));
                         $reply .= "IP $ip is valid, passed all checks, and has been added to DNS records.";
                     } elseif ($response['400 Response']) {
                         $reply .= "IP $ip passed the 400 response check but failed the Xray check.";
@@ -579,8 +584,8 @@ class DnsUpdateService
             ];
 
             //if ($result['400 Response']) {
-                $ipXrayReport = $this->processIp($ip);
-                $result = array_merge($result, $ipXrayReport);
+            $ipXrayReport = $this->processIp($ip);
+            $result = array_merge($result, $ipXrayReport);
             //}
 
             $responses[$ip] = $result;
@@ -598,7 +603,7 @@ class DnsUpdateService
 
         foreach ($ipAddresses as $ipAddress) {
             $formatIP = $ipAddress;
-                        //$this->logAndInfo("Checking 400 response for IP: $ipAddress");
+            //$this->logAndInfo("Checking 400 response for IP: $ipAddress");
             if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 $formatIP = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
             }
