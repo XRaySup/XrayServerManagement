@@ -591,7 +591,9 @@ class DnsUpdateService
             }
             $this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $formatIP");
             $ch = curl_init();
-
+            if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+            }
             curl_setopt($ch, CURLOPT_URL, "http://$formatIP");
             curl_setopt($ch, CURLOPT_PORT, 443); // Use port 443 without HTTPS
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
