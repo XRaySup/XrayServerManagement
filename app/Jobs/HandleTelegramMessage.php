@@ -67,8 +67,8 @@ class HandleTelegramMessage implements ShouldQueue
     {
         // Implement the handleFreeXrayBotMessage method
         Log::info('Handling ServersBot message.');
-
-        if ($this->checkUser(env('TELEGRAM_SERVERS_ADMIN_IDS')) == false) {
+        $adminIds = config('app.telegram_servers_admin_ids');
+        if ($this->checkUser($adminIds) == false) {
             return;
         }
         $message = $this->requestData['message'];
