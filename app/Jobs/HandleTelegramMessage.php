@@ -301,7 +301,7 @@ class HandleTelegramMessage implements ShouldQueue
                 'chat_id' => $chatId,
                 'reply_to_message_id' => $messageId,
                 'text' => $text,
-                'parse_mode' => 'Markdown',
+                'parse_mode' => 'MarkdownV2',
             ]);
             return $response;
         } catch (\Exception $e) {
