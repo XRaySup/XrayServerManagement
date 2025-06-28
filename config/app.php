@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 return [
 
     'telegram_servers_admin_ids' => env('TELEGRAM_SERVERS_ADMIN_IDS', ''),
+    'skip_ips' => env('SKIP_IPS', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Name
