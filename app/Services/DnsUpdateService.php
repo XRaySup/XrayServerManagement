@@ -328,7 +328,7 @@ class DnsUpdateService
         // Validate the IP address
         if (
             filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ||
-            filter_var(trim($ip, '[]'), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
+            filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
         ) {
 
             try {
@@ -554,9 +554,7 @@ class DnsUpdateService
         $responses400 = $this->check400Responses($ipAddresses);
 
         foreach ($ipAddresses as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-                $ip = '[' . trim($ip, '[]') . ']';
-            }
+
             $result = [
                 'IP' => $ip,
                 '400 Response' => $responses400[$ip] ?? false,
@@ -809,6 +807,9 @@ class DnsUpdateService
     }
     private function runXrayWithProxyIP($proxyIP)
     {
+        if (filter_var($proxyIP, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $ip = '[' . trim($proxyIP, '[]') . ']';
+        }
         // Encode IP in Base64 format
         $base64Ip = base64_encode($proxyIP);
 
