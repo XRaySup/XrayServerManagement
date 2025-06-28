@@ -247,6 +247,13 @@ class DnsUpdateService
             //$this->logAndInfo("Expected Response: " . ($ExpectedResponse ? 'True' : 'False'));
 
             // Check and update unexpected response count
+            $skipIps = array_map('trim', explode(',', env('SKIP_IPS', '')));
+            if (in_array($ip, $skipIps)) {
+                $this->logAndInfo("IP '$ip' is in the skip list. Skipping actions.");
+                $ipReport['Action'] = 'Skipped';
+                $this->ipLogData[$ip] = $ipReport;
+                continue;
+            }
             if (!$ipReport['400 Response']) {
                 // Increment the unexpected response count
                 $ipReport['Unexpected Response Count']++;
@@ -345,6 +352,12 @@ class DnsUpdateService
                         "File Size: " . $response['File Size'] . "\n";
                     // Check if the IP passed the 400 response and Xray checks
                     if ($response['400 Response'] && $response['Result']) {
+                        $skipIps = array_map('trim', explode(',', env('SKIP_IPS', '')));
+                        if (!in_array($ip, $skipIps)) {
+                            $this->cloudflare->addDNSRecord($this->subdomainPattern, trim($ip, '[]'));
+                        }else {
+                            $reply .= "IP $ip is in the skip list. No action taken.";
+                        }
                         $this->cloudflare->addDNSRecord($this->subdomainPattern, trim($ip, '[]'));
                         $reply .= "IP $ip is valid, passed all checks, and has been added to DNS records.";
                     } elseif ($response['400 Response']) {
