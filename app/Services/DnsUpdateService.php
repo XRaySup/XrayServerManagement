@@ -565,10 +565,10 @@ class DnsUpdateService
                 'Result' => false
             ];
 
-            if ($result['400 Response']) {
+            //if ($result['400 Response']) {
                 $ipXrayReport = $this->processIp($ip);
                 $result = array_merge($result, $ipXrayReport);
-            }
+            //}
 
             $responses[$ip] = $result;
             $this->logAndOutput('IP: ' . $ip . ' 400 Response: ' . ($result['400 Response'] ? 'True' : 'False') . ' Google Response: ' . $result['Google Response'] . ' 204 Response: ' . $result['204 Response'] . ' Download Time: ' . $result['Download Time'] . ' File Size: ' . $result['File Size']);
