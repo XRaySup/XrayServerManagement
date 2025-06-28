@@ -807,9 +807,11 @@ class DnsUpdateService
     }
     private function runXrayWithProxyIP($proxyIP)
     {
+        log::info("Running Xray with proxy IP: $proxyIP");
         if (filter_var($proxyIP, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             $ip = '[' . trim($proxyIP, '[]') . ']';
         }
+        log::info("Running Xray with proxy IP: $proxyIP");
         // Encode IP in Base64 format
         $base64Ip = base64_encode($proxyIP);
 
