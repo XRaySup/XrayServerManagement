@@ -586,6 +586,9 @@ class DnsUpdateService
         $responses = [];
 
         foreach ($ipAddresses as $ipAddress) {
+            if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                $ipAddress = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
+            }
             $ch = curl_init();
 
             curl_setopt($ch, CURLOPT_URL, "http://$ipAddress");
