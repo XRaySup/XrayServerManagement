@@ -154,8 +154,23 @@ class CloudflareApiService
         return $response['result'];
     }
 
-    public function updateDnsRecord($recordId, $name, $content, $type = 'A', $ttl = 3600, $proxied = false)
+    public function updateDnsRecord($recordId, $name, $content, $ttl = 3600, $proxied = false)
     {
+        // Determine the DNS record type based on the content (IPv4 or IPv6)
+        // Remove brackets if present and trim whitespace
+        if (is_string($content)) {
+            $content = trim($content, "[] \t\n\r\0\x0B");
+        } elseif (is_array($content)) {
+            $content = trim(reset($content), "[] \t\n\r\0\x0B");
+        }
+        if (filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $type = 'A';
+        } elseif (filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $type = 'AAAA';
+        } else {
+            // Default to 'A' if not a valid IP, or handle as needed
+            $type = 'A';
+        }
         $data = [
             'type' => $type,
             'name' => $name,
