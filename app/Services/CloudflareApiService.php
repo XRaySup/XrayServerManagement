@@ -181,7 +181,9 @@ class CloudflareApiService
     
         // Attempt to update the DNS record
         $response = $this->makeRequest('put', "zones/{$this->zoneId}/dns_records/{$recordId}", $data);
-
+        \Log::info('Cloudflare updateDnsRecord response', [
+            'response' => $response,
+        ]);
         // Check if 'success' key is present
         if (!isset($response['success']) || !$response['success']) {
             $errorCode = $response['errors'][0]['code'] ?? 'Unknown Code';
