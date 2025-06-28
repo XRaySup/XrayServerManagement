@@ -344,8 +344,7 @@ class DnsUpdateService
 
                 if (isset($ipResponse[$ip])) {
                     $response = $ipResponse[$ip];
-                    $reply = "IP: $ip\n" .
-                        "400 Response: " . ($response['400 Response'] ? 'True' : 'False') . "\n" .
+                    $reply = "400 Response: " . ($response['400 Response'] ? 'True' : 'False') . "\n" .
                         "Google Response: " . $response['Google Response'] . "\n" .
                         "204 Response: " . $response['204 Response'] . "\n" .
                         "Download Time: " . $response['Download Time'] . "\n" .
