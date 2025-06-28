@@ -123,8 +123,17 @@ class CloudflareApiService
         return null;
     }
 
-    public function addDnsRecord($name, $content, $type = 'A', $ttl = 3600, $proxied = false)
+    public function addDnsRecord($name, $content, $ttl = 3600, $proxied = false)
     {
+        // Determine the DNS record type based on the content (IPv4 or IPv6)
+        if (filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $type = 'A';
+        } elseif (filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $type = 'AAAA';
+        } else {
+            // Default to 'A' if not a valid IP, or handle as needed
+            $type = 'A';
+        }
         $data = [
             'type' => $type,
             'name' => $name,
