@@ -353,8 +353,8 @@ class DnsUpdateService
 
                     $skipIps = array_map('trim', explode(',', config('app.skip_ips', '')));
                     if (in_array($ip, $skipIps)) {
-                        $reply .= "IP $ip is in the single ip skip list. No action taken!\n";
-                        $this->logAndInfo("IP $ip is in the single ip skip list. No action taken!");
+                        $reply .= "IP $ip is in the single ip skip list. No action taken!!\n";
+                        $this->logAndInfo("IP $ip is in the single ip skip list. No action taken!!");
                         return $reply;
                     }
 
