@@ -39,10 +39,10 @@ class DnsUpdateService
         $this->tempConfigFile = $this->tempDir . '/temp_config.json';
         $this->outputCsv = base_path('Xray/results.csv');
         $this->validIpsCsv = base_path('Xray/ValidIPs.csv');
-        $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_DOMAIN');
+        $this->subdomainPattern = env('SUBDOMAIN_PATTERN') . env('CLOUDFLARE_ACCOUNT');
         $this->logFile = base_path('storage/logs/dns_update.log');
 
-        $this->cloudflare = new CloudflareApiService(env('CLOUDFLARE_DOMAIN'));
+        $this->cloudflare = new CloudflareApiService(env('CLOUDFLARE_ACCOUNT'));
 
         $this->ipLog = base_path('storage/logs/' . $this->subdomainPattern . '.csv');
 
