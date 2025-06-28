@@ -180,7 +180,7 @@ class HandleTelegramMessage implements ShouldQueue
                     $dnsUpdateService = new DnsUpdateService();
                     $result = $dnsUpdateService->checkSingleIP($line);
                     // Send the result back to the user
-                    $this->sendReply("Result for IP $line: \n $result");
+                    $this->sendReply("$result");
                 }
             }
             // If no valid IP was found, reply with unknown command
