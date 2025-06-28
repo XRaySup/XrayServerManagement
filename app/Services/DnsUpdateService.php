@@ -602,7 +602,7 @@ class DnsUpdateService
             if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 $formatIP = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
             }
-            $this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $formatIP");
+            //$this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $formatIP");
             $ch = curl_init();
             if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
