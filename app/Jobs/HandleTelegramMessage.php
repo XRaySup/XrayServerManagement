@@ -121,8 +121,9 @@ class HandleTelegramMessage implements ShouldQueue
     private function handleProxyBotMessage()
     {
         Log::info('Handling ProxyBot message.');
-
-        if ($this->checkUser(env('TELEGRAM_PROXY_ADMIN_IDS')) == false) {
+        $adminIds = config('app.telegram_servers_admin_ids');
+        log::info('Admin IDs: ' . $adminIds);
+        if ($this->checkUser($adminIds) == false) {
             return;
         }
 
