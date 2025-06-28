@@ -584,11 +584,11 @@ class DnsUpdateService
         $responses = [];
 
         foreach ($ipAddresses as $ipAddress) {
-                        $this->logAndInfo("Checking 400 response for IP: $ipAddress");
+                        //$this->logAndInfo("Checking 400 response for IP: $ipAddress");
             if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 $ip = '[' . trim($ipAddress, '[]') . ']'; // Ensure IPv6 format
             }
-            $this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $ip");
+            //$this->logAndInfo("Checking 400 response for IP: $ipAddress and formatted as: $ip");
             $ch = curl_init();
 
             curl_setopt($ch, CURLOPT_URL, "http://$ip");
@@ -811,7 +811,7 @@ class DnsUpdateService
     {
         log::info("Running Xray with proxy IP: $proxyIP");
         if (filter_var($proxyIP, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            $ip = '[' . trim($proxyIP, '[]') . ']';
+            $proxyIP = '[' . trim($proxyIP, '[]') . ']';
         }
         log::info("Running Xray with proxy IP: $proxyIP");
         // Encode IP in Base64 format
