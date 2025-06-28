@@ -344,11 +344,13 @@ class DnsUpdateService
 
                 if (isset($ipResponse[$ip])) {
                     $response = $ipResponse[$ip];
-                    $reply = "400 Response: " . ($response['400 Response'] ? 'True' : 'False') . "\n" .
-                        "Google Response: " . $response['Google Response'] . "\n" .
-                        "204 Response: " . $response['204 Response'] . "\n" .
-                        "Download Time: " . $response['Download Time'] . "\n" .
-                        "File Size: " . $response['File Size'] . "\n";
+                    $reply = "🟢 <b>IP Check Result</b>\n";
+                    $reply .= "IP: <code>$ip</code>\n";
+                    $reply .= "• <b>400 Response:</b> " . ($response['400 Response'] ? '✅ Yes' : '❌ No') . "\n";
+                    $reply .= "• <b>Google Response:</b> <code>" . $response['Google Response'] . "</code>\n";
+                    $reply .= "• <b>204 Response:</b> <code>" . $response['204 Response'] . "</code>\n";
+                    $reply .= "• <b>Download Time:</b> <code>" . $response['Download Time'] . " ms</code>\n";
+                    $reply .= "• <b>File Size:</b> <code>" . $response['File Size'] . "</code>\n";
 
                     $skipIps = array_map('trim', explode(',', config('app.skip_ips', '')));
                     if (in_array($ip, $skipIps)) {
