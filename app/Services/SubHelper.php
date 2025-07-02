@@ -429,12 +429,11 @@ function genVlessLink($inbound, $client, $address, $remark)
             break;
         case 'xhttp':
 
-            $httpupgrade = $stream['xhttpSettings'];
-            $params['path'] = $httpupgrade['path'];
-            $headers = $httpupgrade['headers'];
+            $xhttp = $stream['xhttpSettings'];
+            $params['path'] = $xhttp['path'];
+            $headers = $xhttp['headers'];
             $params['host'] = searchKey($headers, 'host');
-            if($params['host'] == '')
-            {
+            if ($params['host'] == '') {
                 $params['host'] = searchKey($headers, 'hostt');
             }
 
@@ -1022,6 +1021,16 @@ function getNetworkSettings($stream)
             $params['key'] = $quic['key'];
             $header = $quic['header'];
             $params['headerType'] = $header['type'];
+            break;
+        case 'xhttp':
+            $xhttp = $stream['xhttpSettings'];
+            $params['mode'] = $xhttp['mode'];
+            $params['path'] = $xhttp['path'];
+            $headers = $xhttp['headers'];
+            $params['host'] = searchKey($headers, 'host');
+            if ($params['host'] == '') {
+                $params['host'] = searchKey($headers, 'hostt');
+            }
             break;
         case 'grpc':
             $grpc = $stream['grpcSettings'];
