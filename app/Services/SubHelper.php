@@ -127,11 +127,11 @@ function genMultiServersJson($servers, $filter)
 
 
     $sampleLeastPing['outbounds'] = $outbounds;
-    $sampleLeastPing['remarks'] = "🕊Toomaj IRDIR🕊";
+    $sampleLeastPing['remarks'] = "🤝Mixed IRDIR🕊";
 
     $multiLeast[0] = $sampleLeastPing;
 
-    $sampleLeastPing['remarks'] = "🕊Toomaj Special🕊";
+    $sampleLeastPing['remarks'] = "🤝Mixed Special🕊";
 
     $sampleLeastPing['dns'] = $dns;
 
@@ -140,7 +140,7 @@ function genMultiServersJson($servers, $filter)
     $multiLeast[1] = $sampleLeastPing;
 
     $sampleLeastPing['routing']['rules'] = $rulesMagic;
-    $sampleLeastPing['remarks'] = "🕊Magic 4 Toomaj🕊";
+    $sampleLeastPing['remarks'] = "🤝Mixed Majic🕊";
 
     $multiLeast[2] = $sampleLeastPing;
     $bestFragConfs = array_merge($multiLeast, $bestFragConfs);
