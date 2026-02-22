@@ -68,11 +68,9 @@ function genMultiServersJson($servers, $filter)
 
                 foreach ($inbound['settings']['clients'] as $cid => $client) {
                     if ($filter != 'all') {
-                        if ($filter == "VPN" && str_contains($client['email'], "VIP")) {
+                        if ($filter == "VPN" && str_contains($client['email'], "VPN")) {
                             continue;
-                        } elseif ($filter == "VIP" && !str_contains($client['email'], "VIP")) {
-                            continue;
-                        }
+                        } 
                     }
                     if ($client['enable']) {
                         $clientOutbounds = $client['outbounds'];
