@@ -68,7 +68,7 @@ function genMultiServersJson($servers, $filter)
 
                 foreach ($inbound['settings']['clients'] as $cid => $client) {
                     if ($filter != 'all') {
-                        if ($filter == "VPN" && str_contains($client['email'], "VPN")) {
+                        if ($filter == "VPN" && !str_contains($client['email'], "VPN")) {
                             continue;
                         } 
                     }
