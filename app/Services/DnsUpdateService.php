@@ -837,11 +837,87 @@ class DnsUpdateService
         }
         //log::info("Running Xray with proxy IP: $proxyIP");
         // Encode IP in Base64 format
-        $base64Ip = base64_encode($proxyIP);
+        //$base64Ip = base64_encode($proxyIP);
 
         // Update the Xray config with the Base64 IP
-        $configContent = file_get_contents($this->xrayConfigFile);
-        $updatedConfig = str_replace('PROXYIP', $base64Ip, $configContent);
+        $json = file_get_contents($this->xrayConfigFile);
+        $data = json_decode($json, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException('Invalid JSON: ' . json_last_error_msg());
+        }
+
+        // Extract wsSettings.path
+        $path = $data['outbounds'][0]['streamSettings']['wsSettings']['path'] ?? '';
+
+        if ($path === '') {
+            throw new RuntimeException('wsSettings.path not found');
+        }
+
+        // Remove leading slash and split off query params
+        $path = ltrim($path, '/');
+        $parts = explode('?', $path, 2);
+        $encoded = $parts[0];
+        $queryParams = $parts[1] ?? '';
+
+        // Decode base64url
+        $base64 = strtr($encoded, '-_', '+/');
+        $padding = strlen($base64) % 4;
+        if ($padding > 0) {
+            $base64 .= str_repeat('=', 4 - $padding);
+        }
+
+        $decoded = base64_decode($base64);
+        $innerData = json_decode($decoded, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException('Decoded string is not valid JSON');
+        }
+
+        //echo "Before update:\n";
+        //print_r($innerData);
+
+        // Add proxy IP to panelIPs array
+        if (!isset($innerData['panelIPs'])) {
+            $innerData['panelIPs'] = [];
+        }
+        $innerData['panelIPs'] = [$proxyIP];
+
+        //echo "\nAfter update:\n";
+        //print_r($innerData);
+
+        // Re-encode to base64url
+        $reencoded = json_encode($innerData, JSON_UNESCAPED_SLASHES);
+        $base64Encoded = base64_encode($reencoded);
+        $base64UrlEncoded = rtrim(strtr($base64Encoded, '+/', '-_'), '=');
+
+        // Rebuild the path with query params
+        $newPath = '/' . $base64UrlEncoded;
+
+        if ($queryParams) {
+            $newPath .= '?' . $queryParams;
+        }
+
+        //echo "\nNew path:\n";
+        //echo $newPath . "\n";
+
+        // Update config
+        $data['outbounds'][0]['streamSettings']['wsSettings']['path'] = $newPath;
+        // Ensure empty 'settings' arrays become JSON objects ({}), not arrays ([])
+        if (isset($data['outbounds']) && is_array($data['outbounds'])) {
+            foreach ($data['outbounds'] as $i => $outbound) {
+                if (isset($data['outbounds'][$i]['settings']) && is_array($data['outbounds'][$i]['settings']) && empty($data['outbounds'][$i]['settings'])) {
+                    $data['outbounds'][$i]['settings'] = (object)[];
+                }
+            }
+        }
+        $updatedConfig = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+
+
+        //echo "\nConfig updated successfully!\n";
+
+        //$updatedConfig = str_replace('PROXYIP', $base64Ip, $configContent);
         file_put_contents($this->tempConfigFile, $updatedConfig);
 
         // Run Xray in the background and perform 204 check
